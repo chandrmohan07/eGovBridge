@@ -1,0 +1,19 @@
+{
+  "name": "sih-government-integration-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Unified Government Service Integration Platform with interoperability layer, API Gateway, and adapters.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/**/*.test.js",
+    "start:ui": "node scripts/dev-server.js"
+  },
+  "keywords": [
+    "sih",
+    "government-services",
+    "interoperability",
+    "api-gateway"
+  ],
+  "author": "",
+  "license": "UNLICENSED"
+}

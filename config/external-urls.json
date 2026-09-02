@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "version": "1.0.0",
+  "description": "Central external URL registry for public, non-secret sources adhering to PLAN.md Rule 3",
+  "officialSources": {
+    "scholarships": {
+      "name": "National Scholarship Portal (NSP)",
+      "url": "https://scholarships.gov.in",
+      "purpose": "Official Government of India portal for all scholarship schemes across central ministries and states",
+      "verified": true,
+      "status": "Verified Public Portal",
+      "lastVerifiedDate": "2026-09-03",
+      "notes": "Used as public reference source for verified scholarship notifications"
+    },
+    "governmentSchemes": {
+      "name": "myScheme National Platform",
+      "url": "https://www.myscheme.gov.in",
+      "purpose": "National e-Governance Division platform for discovering government welfare schemes",
+      "verified": true,
+      "status": "Verified Public Portal",
+      "lastVerifiedDate": "2026-09-03",
+      "notes": "Used as reference taxonomy for scheme categories and eligibility criteria"
+    },
+    "employment": {
+      "name": "National Career Service (NCS)",
+      "url": "https://www.ncs.gov.in",
+      "purpose": "Ministry of Labour & Employment verified employment, job postings, and apprenticeship hub",
+      "verified": true,
+      "status": "Verified Public Portal",
+      "lastVerifiedDate": "2026-09-03",
+      "notes": "Used as official public employment reference for Employment Hub"
+    },
+    "announcements": {
+      "name": "Press Information Bureau (PIB)",
+      "url": "https://pib.gov.in",
+      "purpose": "Official nodal agency of the Government of India for communicating official news, releases, and announcements",
+      "verified": true,
+      "status": "Verified Public Portal",
+      "lastVerifiedDate": "2026-09-03",
+      "notes": "Used as official announcements and notifications verification reference"
+    }
+  }
+}

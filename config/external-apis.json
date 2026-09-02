@@ -1,0 +1,159 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "version": "1.0.0",
+  "description": "Central external API registry for SIH Government Service Integration Platform",
+  "governmentSystems": {
+    "education": {
+      "name": "Higher Education Verification System",
+      "purpose": "Verification of academic credentials, student enrollment, and marks verification",
+      "baseUrl": "${EDUCATION_API_URL}",
+      "endpoints": {
+        "verifyStudent": "/api/v1/verify/student",
+        "verifyDegree": "/api/v1/verify/degree"
+      },
+      "authMethod": "Bearer Token / API Key",
+      "envVarName": "EDUCATION_API_URL",
+      "authEnvVarName": "EDUCATION_API_KEY",
+      "requestMethod": "POST",
+      "requiredParameters": [
+        "studentId",
+        "institutionCode",
+        "academicYear"
+      ],
+      "responseFormat": "application/json",
+      "owner": "Department of Higher Education (Simulated / Mock Adapter)",
+      "enabled": true,
+      "mode": "mock",
+      "lastVerifiedDate": "2026-09-03"
+    },
+    "income": {
+      "name": "Revenue & Income Verification Service",
+      "purpose": "Verification of income certificates for scholarship and welfare eligibility",
+      "baseUrl": "${INCOME_API_URL}",
+      "endpoints": {
+        "verifyCertificate": "/api/v1/verify/income-certificate"
+      },
+      "authMethod": "Bearer Token / API Key",
+      "envVarName": "INCOME_API_URL",
+      "authEnvVarName": "INCOME_API_KEY",
+      "requestMethod": "POST",
+      "requiredParameters": [
+        "certificateNumber",
+        "applicantAadhaarHash",
+        "financialYear"
+      ],
+      "responseFormat": "application/json",
+      "owner": "State Revenue Department (Simulated / Mock Adapter)",
+      "enabled": true,
+      "mode": "mock",
+      "lastVerifiedDate": "2026-09-03"
+    },
+    "health": {
+      "name": "Health Records & Welfare Verification",
+      "purpose": "Verification of disability status, health insurance eligibility, and medical records",
+      "baseUrl": "${HEALTH_API_URL}",
+      "endpoints": {
+        "verifyBeneficiary": "/api/v1/verify/beneficiary"
+      },
+      "authMethod": "Bearer Token / API Key",
+      "envVarName": "HEALTH_API_URL",
+      "authEnvVarName": "HEALTH_API_KEY",
+      "requestMethod": "POST",
+      "requiredParameters": [
+        "beneficiaryId",
+        "schemeCode"
+      ],
+      "responseFormat": "application/json",
+      "owner": "Ministry of Health (Simulated / Mock Adapter)",
+      "enabled": false,
+      "mode": "planned",
+      "lastVerifiedDate": "2026-09-03"
+    },
+    "land": {
+      "name": "Land Records & Revenue Registry",
+      "purpose": "Verification of land ownership and farmer welfare scheme eligibility",
+      "baseUrl": "${LAND_API_URL}",
+      "endpoints": {
+        "verifyLandHolding": "/api/v1/verify/land-holding"
+      },
+      "authMethod": "Bearer Token / API Key",
+      "envVarName": "LAND_API_URL",
+      "authEnvVarName": "LAND_API_KEY",
+      "requestMethod": "POST",
+      "requiredParameters": [
+        "khasraNumber",
+        "stateCode",
+        "districtCode"
+      ],
+      "responseFormat": "application/json",
+      "owner": "Department of Land Resources (Simulated / Mock Adapter)",
+      "enabled": false,
+      "mode": "planned",
+      "lastVerifiedDate": "2026-09-03"
+    },
+    "transport": {
+      "name": "Transport & Driving License Verification",
+      "purpose": "Verification of driving license and commercial vehicle permits",
+      "baseUrl": "${TRANSPORT_API_URL}",
+      "endpoints": {
+        "verifyLicense": "/api/v1/verify/license"
+      },
+      "authMethod": "Bearer Token / API Key",
+      "envVarName": "TRANSPORT_API_URL",
+      "authEnvVarName": "TRANSPORT_API_KEY",
+      "requestMethod": "POST",
+      "requiredParameters": [
+        "dlNumber",
+        "dateOfBirth"
+      ],
+      "responseFormat": "application/json",
+      "owner": "Ministry of Road Transport (Simulated / Mock Adapter)",
+      "enabled": false,
+      "mode": "planned",
+      "lastVerifiedDate": "2026-09-03"
+    },
+    "scholarship": {
+      "name": "National Scholarship Verification & Disbursement Service",
+      "purpose": "Direct verification and status checking for centrally sponsored scholarships",
+      "baseUrl": "${SCHOLARSHIP_API_URL}",
+      "endpoints": {
+        "checkEligibility": "/api/v1/scholarship/check-eligibility",
+        "submitApplication": "/api/v1/scholarship/submit"
+      },
+      "authMethod": "Bearer Token / API Key",
+      "envVarName": "SCHOLARSHIP_API_URL",
+      "authEnvVarName": "SCHOLARSHIP_API_KEY",
+      "requestMethod": "POST",
+      "requiredParameters": [
+        "scholarshipId",
+        "applicantId"
+      ],
+      "responseFormat": "application/json",
+      "owner": "Scholarship Division (Simulated / Mock Adapter)",
+      "enabled": true,
+      "mode": "mock",
+      "lastVerifiedDate": "2026-09-03"
+    }
+  },
+  "chatbot": {
+    "name": "Government Citizen Assistant LLM Gateway",
+    "purpose": "Backend-orchestrated AI guidance for government services, schemes, and application navigation",
+    "baseUrl": "${CHATBOT_API_URL}",
+    "endpoints": {
+      "chat": "/api/v1/chat/completions"
+    },
+    "authMethod": "API Key (Server-Side Only)",
+    "envVarName": "CHATBOT_API_URL",
+    "authEnvVarName": "LLM_API_KEY",
+    "requestMethod": "POST",
+    "requiredParameters": [
+      "prompt",
+      "groundingContext"
+    ],
+    "responseFormat": "application/json",
+    "owner": "AI Assistant Backend Service",
+    "enabled": false,
+    "mode": "planned",
+    "lastVerifiedDate": "2026-09-03"
+  }
+}
