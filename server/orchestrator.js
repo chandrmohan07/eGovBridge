@@ -4,6 +4,7 @@
  */
 
 import crypto from 'node:crypto';
+import { adapterRegistry } from './adapters/adapter-registry.js';
 
 // Task Lifecycle States
 export const TASK_STATUS = {
@@ -208,43 +209,49 @@ export function planWorkflow(service, formData = {}) {
 }
 
 /**
- * Task Sandbox Executor
- * Simulates deterministic execution of a service/department task.
+ * Task Sandbox Executor — Delegated via Department Adapter Layer
  */
 export async function executeTask(task, context = {}) {
   task.status = TASK_STATUS.IN_PROGRESS;
   task.startedAt = new Date().toISOString();
 
-  // Simulated execution delay (10-30ms)
-  await new Promise(r => setTimeout(r, 20));
-
-  // Check for intentional failure trigger in context for testing
-  const shouldFail = context.simulateFailureTask === task.code || 
-                     (context.simulateFailure && context.failedTaskCodes && context.failedTaskCodes.includes(task.code));
-
-  if (shouldFail) {
+  // 1. Resolve department adapter from registry
+  const adapter = adapterRegistry.getAdapter(task.adapterCode || task.departmentCode);
+  if (!adapter) {
     task.retryCount += 1;
-    task.error = context.failureReason || `Simulated departmental outage or validation rejection in ${task.department}`;
+    task.error = `Department adapter not found for code: ${task.adapterCode || task.departmentCode}`;
+    task.status = task.retryCount <= task.maxRetries ? TASK_STATUS.RETRYING : TASK_STATUS.FAILED;
+    return { success: false, task };
+  }
+
+  // 2. Dispatch task execution to department adapter
+  const adapterResult = await adapter.executeTask(task, context);
+
+  if (!adapterResult.success) {
+    task.retryCount += 1;
+    task.error = adapterResult.error?.message || `Downstream verification failed in ${task.department}`;
     if (task.retryCount <= task.maxRetries) {
       task.status = TASK_STATUS.RETRYING;
     } else {
       task.status = TASK_STATUS.FAILED;
     }
-    return { success: false, task };
+    return { success: false, task, adapterResult };
   }
 
-  // Successful execution
+  // 3. Successful execution with normalized adapter output
   task.status = TASK_STATUS.COMPLETED;
   task.completedAt = new Date().toISOString();
   task.error = null;
   task.output = {
-    verifiedBy: task.adapterCode,
-    referenceId: `REF-${crypto.randomBytes(4).toString('hex').toUpperCase()}`,
+    verifiedBy: adapter.code,
+    department: adapter.department,
+    referenceId: adapterResult.referenceId || `REF-${crypto.randomBytes(4).toString('hex').toUpperCase()}`,
     timestamp: task.completedAt,
-    verdict: 'APPROVED'
+    verdict: adapterResult.data?.verdict || 'APPROVED',
+    data: adapterResult.data || {}
   };
 
-  return { success: true, task };
+  return { success: true, task, adapterResult };
 }
 
 /**

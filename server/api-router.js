@@ -7,6 +7,7 @@ import { register, login, logout, authenticateToken, requireRole, requireDepartm
 import { db } from './db.js';
 import { validateApplicationPayload, validateDocument } from './validation.js';
 import { stepOrchestration, executeTask, updateTaskDependencies, computeOrchestrationStatus, TASK_STATUS, ORCHESTRATION_STATUS } from './orchestrator.js';
+import { adapterRegistry } from './adapters/adapter-registry.js';
 
 function readJsonBody(req) {
   return new Promise((resolve, reject) => {
@@ -484,6 +485,52 @@ export async function handleApiRequest(req, res) {
         success: true,
         orchestration: orch
       });
+    }
+
+    // 22. GET /api/v1/adapters (List Registered Department Adapters)
+    if (method === 'GET' && pathname === '/api/v1/adapters') {
+      const adapters = adapterRegistry.listAdapters();
+      return sendJson(res, 200, {
+        success: true,
+        count: adapters.length,
+        adapters
+      });
+    }
+
+    // 23. GET /api/v1/adapters/:code/health (Adapter Health Check)
+    const adapterHealthMatch = pathname.match(/^\/api\/v1\/adapters\/([^/]+)\/health$/);
+    if (method === 'GET' && adapterHealthMatch) {
+      const adapterCode = adapterHealthMatch[1];
+      const adapter = adapterRegistry.getAdapter(adapterCode);
+      if (!adapter) {
+        return sendJson(res, 404, { success: false, error: `Department adapter not found for code: ${adapterCode}` });
+      }
+
+      const health = await adapter.healthCheck();
+      return sendJson(res, 200, {
+        success: true,
+        health
+      });
+    }
+
+    // 24. POST /api/v1/adapters/:code/execute (Direct Adapter Execution)
+    const adapterExecMatch = pathname.match(/^\/api\/v1\/adapters\/([^/]+)\/execute$/);
+    if (method === 'POST' && adapterExecMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      const adapterCode = adapterExecMatch[1];
+      const adapter = adapterRegistry.getAdapter(adapterCode);
+      if (!adapter) {
+        return sendJson(res, 404, { success: false, error: `Department adapter not found for code: ${adapterCode}` });
+      }
+
+      const body = await readJsonBody(req);
+      const task = body.task || { code: 'TASK_VERIFY', title: 'Direct Verification Request' };
+      const context = body.context || {};
+      context.requestId = req.requestId;
+
+      const result = await adapter.executeTask(task, context);
+      const statusCode = result.success ? 200 : 400;
+      return sendJson(res, statusCode, result);
     }
 
     // Unmatched API endpoint
