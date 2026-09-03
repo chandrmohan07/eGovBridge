@@ -142,6 +142,18 @@ import {
   GRIEVANCE_CATEGORIES,
   GrievanceError
 } from './grievances/index.js';
+import {
+  getAdminOverview,
+  getApplicationAnalytics,
+  getDepartmentAnalytics,
+  getOfficerAnalytics,
+  getServicePerformance,
+  getWorkflowAnalytics,
+  getExchangeAnalytics,
+  getPlatformHealth,
+  exportAdminReport,
+  AdminError
+} from './admin/index.js';
 
 function readJsonBody(req, maxLimit = 10 * 1024 * 1024) {
   return new Promise((resolve, reject) => {
@@ -1901,6 +1913,91 @@ export async function handleApiRequest(req, res) {
         limit: url.searchParams.get('limit')
       };
       const result = listFeedback(user, filters);
+      return sendJson(res, 200, result);
+    }
+
+    // ==========================================
+    // PHASE 20 — ADMIN DASHBOARD & ANALYTICS ENDPOINTS
+    // ==========================================
+
+    // 113. GET /api/v1/admin/dashboard
+    if (method === 'GET' && pathname === '/api/v1/admin/dashboard') {
+      const { user } = authenticateToken(req.headers.authorization);
+      requireRole(user, ['ADMIN']);
+      const result = getAdminOverview(user);
+      return sendJson(res, 200, result);
+    }
+
+    // 114. GET /api/v1/admin/applications/analytics
+    if (method === 'GET' && pathname === '/api/v1/admin/applications/analytics') {
+      const { user } = authenticateToken(req.headers.authorization);
+      requireRole(user, ['ADMIN']);
+      const filters = {
+        departmentId: url.searchParams.get('departmentId'),
+        status: url.searchParams.get('status'),
+        search: url.searchParams.get('search'),
+        limit: url.searchParams.get('limit'),
+        offset: url.searchParams.get('offset')
+      };
+      const result = getApplicationAnalytics(user, filters);
+      return sendJson(res, 200, result);
+    }
+
+    // 115. GET /api/v1/admin/departments/analytics
+    if (method === 'GET' && pathname === '/api/v1/admin/departments/analytics') {
+      const { user } = authenticateToken(req.headers.authorization);
+      requireRole(user, ['ADMIN']);
+      const result = getDepartmentAnalytics(user);
+      return sendJson(res, 200, result);
+    }
+
+    // 116. GET /api/v1/admin/officers/analytics
+    if (method === 'GET' && pathname === '/api/v1/admin/officers/analytics') {
+      const { user } = authenticateToken(req.headers.authorization);
+      requireRole(user, ['ADMIN']);
+      const result = getOfficerAnalytics(user);
+      return sendJson(res, 200, result);
+    }
+
+    // 117. GET /api/v1/admin/services/analytics
+    if (method === 'GET' && pathname === '/api/v1/admin/services/analytics') {
+      const { user } = authenticateToken(req.headers.authorization);
+      requireRole(user, ['ADMIN']);
+      const result = getServicePerformance(user);
+      return sendJson(res, 200, result);
+    }
+
+    // 118. GET /api/v1/admin/workflows/analytics
+    if (method === 'GET' && pathname === '/api/v1/admin/workflows/analytics') {
+      const { user } = authenticateToken(req.headers.authorization);
+      requireRole(user, ['ADMIN']);
+      const result = getWorkflowAnalytics(user);
+      return sendJson(res, 200, result);
+    }
+
+    // 119. GET /api/v1/admin/exchanges/analytics
+    if (method === 'GET' && pathname === '/api/v1/admin/exchanges/analytics') {
+      const { user } = authenticateToken(req.headers.authorization);
+      requireRole(user, ['ADMIN']);
+      const result = getExchangeAnalytics(user);
+      return sendJson(res, 200, result);
+    }
+
+    // 120. GET /api/v1/admin/platform-health
+    if (method === 'GET' && pathname === '/api/v1/admin/platform-health') {
+      const { user } = authenticateToken(req.headers.authorization);
+      requireRole(user, ['ADMIN']);
+      const result = getPlatformHealth(user);
+      return sendJson(res, 200, result);
+    }
+
+    // 121. GET /api/v1/admin/export
+    if (method === 'GET' && pathname === '/api/v1/admin/export') {
+      const { user } = authenticateToken(req.headers.authorization);
+      requireRole(user, ['ADMIN']);
+      const reportType = url.searchParams.get('type') || 'SUMMARY';
+      const format = url.searchParams.get('format') || 'json';
+      const result = exportAdminReport(user, reportType, format);
       return sendJson(res, 200, result);
     }
 
