@@ -22,6 +22,19 @@ import {
   EXCHANGE_POLICIES,
   EXCHANGE_STATUS
 } from './exchange/index.js';
+import {
+  getOfficerQueue,
+  getOfficerApplicationDetail,
+  claimApplication,
+  startReview,
+  requestClarification,
+  addOfficerNote,
+  approveApplication,
+  rejectApplication,
+  completeApplication,
+  getDepartmentWorkload,
+  OfficerWorkflowError
+} from './officer/officer-workflow.js';
 
 function readJsonBody(req) {
   return new Promise((resolve, reject) => {
@@ -123,6 +136,146 @@ export async function handleApiRequest(req, res) {
         success: true,
         departmentCode: targetDept,
         applications
+      });
+    }
+
+    // 6a. GET /api/v1/officer/applications (Officer Queue)
+    if (method === 'GET' && pathname === '/api/v1/officer/applications') {
+      const { user } = authenticateToken(req.headers.authorization);
+      const urlObj = new URL(req.url, 'http://localhost');
+      const filters = {
+        status: urlObj.searchParams.get('status') || 'ALL',
+        search: urlObj.searchParams.get('search') || '',
+        assignedToMe: urlObj.searchParams.get('assignedToMe'),
+        unassigned: urlObj.searchParams.get('unassigned')
+      };
+
+      const queue = getOfficerQueue(user, filters);
+      return sendJson(res, 200, {
+        success: true,
+        departmentCode: user.departmentCode,
+        count: queue.length,
+        applications: queue
+      });
+    }
+
+    // 6b. GET /api/v1/officer/workload (Department Workload Statistics)
+    if (method === 'GET' && pathname === '/api/v1/officer/workload') {
+      const { user } = authenticateToken(req.headers.authorization);
+      const workload = getDepartmentWorkload(user);
+      return sendJson(res, 200, {
+        success: true,
+        ...workload
+      });
+    }
+
+    // 6c. GET /api/v1/officer/applications/:id (Application Detail View)
+    const officerAppMatch = pathname.match(/^\/api\/v1\/officer\/applications\/([^/]+)$/);
+    if (method === 'GET' && officerAppMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      const appId = officerAppMatch[1];
+      const app = getOfficerApplicationDetail(user, appId);
+      return sendJson(res, 200, {
+        success: true,
+        application: app
+      });
+    }
+
+    // 6d. POST /api/v1/officer/applications/:id/claim (Claim Application)
+    const claimMatch = pathname.match(/^\/api\/v1\/officer\/applications\/([^/]+)\/claim$/);
+    if (method === 'POST' && claimMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      const appId = claimMatch[1];
+      const body = await readJsonBody(req).catch(() => ({}));
+      const app = claimApplication(user, appId, body.expectedVersion);
+      return sendJson(res, 200, {
+        success: true,
+        message: 'Application claimed successfully',
+        application: app
+      });
+    }
+
+    // 6e. POST /api/v1/officer/applications/:id/review (Start Review)
+    const reviewMatch = pathname.match(/^\/api\/v1\/officer\/applications\/([^/]+)\/review$/);
+    if (method === 'POST' && reviewMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      const appId = reviewMatch[1];
+      const app = startReview(user, appId);
+      return sendJson(res, 200, {
+        success: true,
+        message: 'Application review commenced',
+        application: app
+      });
+    }
+
+    // 6f. POST /api/v1/officer/applications/:id/clarification (Request Clarification)
+    const clarMatch = pathname.match(/^\/api\/v1\/officer\/applications\/([^/]+)\/clarification$/);
+    if (method === 'POST' && clarMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      const appId = clarMatch[1];
+      const body = await readJsonBody(req);
+      const result = requestClarification(user, appId, body);
+      return sendJson(res, 200, {
+        success: true,
+        message: 'Clarification request sent to citizen',
+        clarification: result.clarification,
+        application: result.app
+      });
+    }
+
+    // 6g. POST /api/v1/officer/applications/:id/notes (Add Internal Processing Note)
+    const noteMatch = pathname.match(/^\/api\/v1\/officer\/applications\/([^/]+)\/notes$/);
+    if (method === 'POST' && noteMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      const appId = noteMatch[1];
+      const body = await readJsonBody(req);
+      const note = addOfficerNote(user, appId, body);
+      return sendJson(res, 201, {
+        success: true,
+        message: 'Internal note recorded',
+        note
+      });
+    }
+
+    // 6h. POST /api/v1/officer/applications/:id/approve (Approve Application)
+    const approveMatch = pathname.match(/^\/api\/v1\/officer\/applications\/([^/]+)\/approve$/);
+    if (method === 'POST' && approveMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      const appId = approveMatch[1];
+      const body = await readJsonBody(req).catch(() => ({}));
+      const app = approveApplication(user, appId, body);
+      return sendJson(res, 200, {
+        success: true,
+        message: 'Application approved successfully',
+        application: app
+      });
+    }
+
+    // 6i. POST /api/v1/officer/applications/:id/reject (Reject Application)
+    const rejectMatch = pathname.match(/^\/api\/v1\/officer\/applications\/([^/]+)\/reject$/);
+    if (method === 'POST' && rejectMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      const appId = rejectMatch[1];
+      const body = await readJsonBody(req);
+      const app = rejectApplication(user, appId, body);
+      return sendJson(res, 200, {
+        success: true,
+        message: 'Application rejected with documented reason',
+        application: app
+      });
+    }
+
+    // 6j. POST /api/v1/officer/applications/:id/complete (Complete / Fulfill Application)
+    const completeMatch = pathname.match(/^\/api\/v1\/officer\/applications\/([^/]+)\/complete$/);
+    if (method === 'POST' && completeMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      const appId = completeMatch[1];
+      const body = await readJsonBody(req).catch(() => ({}));
+      const app = completeApplication(user, appId, body);
+      return sendJson(res, 200, {
+        success: true,
+        message: 'Application fulfilled and completed',
+        application: app
       });
     }
 
@@ -296,9 +449,15 @@ export async function handleApiRequest(req, res) {
         return sendJson(res, 403, { success: false, error: 'Access Denied: Officer cannot access applications outside assigned department' });
       }
 
+      let returnApp = app;
+      if (user.role === 'CITIZEN' && app.internalNotes) {
+        const { internalNotes, ...safeApp } = app;
+        returnApp = safeApp;
+      }
+
       return sendJson(res, 200, {
         success: true,
-        application: app
+        application: returnApp
       });
     }
 
