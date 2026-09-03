@@ -5,6 +5,7 @@
  */
 
 import crypto from 'node:crypto';
+import { normalizeDepartmentPayload, transformCanonicalToDepartment } from '../standardization/mappers.js';
 
 export class BaseAdapter {
   /**
@@ -128,5 +129,19 @@ export class BaseAdapter {
       mode: 'MOCK_SANDBOX',
       timestamp: new Date().toISOString()
     };
+  }
+
+  /**
+   * Translates department-specific payload to canonical format
+   */
+  toCanonical(payload) {
+    return normalizeDepartmentPayload(this.departmentCode, payload);
+  }
+
+  /**
+   * Translates canonical data to department-specific payload
+   */
+  fromCanonical(canonical) {
+    return transformCanonicalToDepartment(this.departmentCode, canonical);
   }
 }

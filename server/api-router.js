@@ -8,6 +8,15 @@ import { db } from './db.js';
 import { validateApplicationPayload, validateDocument } from './validation.js';
 import { stepOrchestration, executeTask, updateTaskDependencies, computeOrchestrationStatus, TASK_STATUS, ORCHESTRATION_STATUS } from './orchestrator.js';
 import { adapterRegistry } from './adapters/adapter-registry.js';
+import {
+  SCHEMAS,
+  CANONICAL_VERSION,
+  validateCitizen,
+  validateAddress,
+  validateApplication,
+  normalizeDepartmentPayload,
+  transformCanonicalToDepartment
+} from './standardization/index.js';
 
 function readJsonBody(req) {
   return new Promise((resolve, reject) => {
@@ -531,6 +540,70 @@ export async function handleApiRequest(req, res) {
       const result = await adapter.executeTask(task, context);
       const statusCode = result.success ? 200 : 400;
       return sendJson(res, statusCode, result);
+    }
+
+    // 25. GET /api/v1/standardization/schemas
+    if (method === 'GET' && pathname === '/api/v1/standardization/schemas') {
+      return sendJson(res, 200, {
+        success: true,
+        version: CANONICAL_VERSION,
+        schemas: SCHEMAS
+      });
+    }
+
+    // 26. POST /api/v1/standardization/validate
+    if (method === 'POST' && pathname === '/api/v1/standardization/validate') {
+      const body = await readJsonBody(req);
+      const schemaType = (body.type || 'Citizen').toLowerCase();
+      const payload = body.data || body;
+
+      let result;
+      if (schemaType === 'citizen') {
+        result = validateCitizen(payload);
+      } else if (schemaType === 'address') {
+        result = validateAddress(payload);
+      } else if (schemaType === 'application') {
+        result = validateApplication(payload);
+      } else {
+        return sendJson(res, 400, { success: false, error: `Unknown schema type: ${schemaType}. Expected: citizen, address, application` });
+      }
+
+      const statusCode = result.valid ? 200 : 422;
+      return sendJson(res, statusCode, {
+        success: result.valid,
+        valid: result.valid,
+        version: CANONICAL_VERSION,
+        errors: result.errors
+      });
+    }
+
+    // 27. POST /api/v1/standardization/normalize
+    if (method === 'POST' && pathname === '/api/v1/standardization/normalize') {
+      const body = await readJsonBody(req);
+      const department = body.department || body.departmentCode || 'GENERIC';
+      const payload = body.data || body.payload || body;
+
+      const canonical = normalizeDepartmentPayload(department, payload);
+      return sendJson(res, 200, {
+        success: true,
+        department,
+        canonicalVersion: CANONICAL_VERSION,
+        canonical
+      });
+    }
+
+    // 28. POST /api/v1/standardization/transform
+    if (method === 'POST' && pathname === '/api/v1/standardization/transform') {
+      const body = await readJsonBody(req);
+      const targetDepartment = body.targetDepartment || body.department || 'GENERIC';
+      const canonicalData = body.canonical || body.data || body;
+
+      const transformed = transformCanonicalToDepartment(targetDepartment, canonicalData);
+      return sendJson(res, 200, {
+        success: true,
+        targetDepartment,
+        data: transformed
+      });
     }
 
     // Unmatched API endpoint
