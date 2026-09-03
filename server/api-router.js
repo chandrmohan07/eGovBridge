@@ -632,7 +632,7 @@ export async function handleApiRequest(req, res) {
         return sendJson(res, 403, { success: false, error: 'Access Denied: You do not own this application' });
       }
 
-      if (app.status === 'SUBMITTED') {
+      if (app.status !== 'DRAFT') {
         return sendJson(res, 400, { success: false, error: 'Cannot modify an already submitted application' });
       }
 
