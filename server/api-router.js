@@ -159,6 +159,11 @@ import {
   recordAuditEvent,
   AUDIT_EVENTS
 } from './security/index.js';
+import {
+  cacheSegments,
+  getPlatformCacheStats,
+  paginate
+} from './cache/index.js';
 
 function readJsonBody(req, maxLimit = 10 * 1024 * 1024) {
   return new Promise((resolve, reject) => {
@@ -428,20 +433,48 @@ export async function handleApiRequest(req, res) {
       });
     }
 
-    // 9. GET /api/v1/services (Service Catalog List with Search & Filtering)
+    // 9. GET /api/v1/services (Service Catalog List with Search, Filtering & Caching)
     if (method === 'GET' && pathname === '/api/v1/services') {
       const search = url.searchParams.get('search') || '';
       const category = url.searchParams.get('category') || 'all';
       const department = url.searchParams.get('department') || 'all';
       const availability = url.searchParams.get('availability') || 'all';
+      const page = url.searchParams.get('page');
+      const limit = url.searchParams.get('limit');
+
+      const cacheKey = `services:${search}:${category}:${department}:${availability}:${page || 'all'}:${limit || 'all'}`;
+      const cached = cacheSegments.CATALOG.get(cacheKey);
+
+      if (cached) {
+        res.setHeader('X-Cache', 'HIT');
+        res.setHeader('ETag', cached.etag);
+        if (req.headers['if-none-match'] === cached.etag) {
+          res.writeHead(304);
+          res.end();
+          return;
+        }
+        return sendJson(res, 200, cached.value);
+      }
 
       const filtered = db.getServices({ search, category, department, availability });
-      return sendJson(res, 200, {
+      const payload = {
         success: true,
         count: filtered.length,
         filters: { search, category, department, availability },
         services: filtered
-      });
+      };
+
+      if (page || limit) {
+        const paginated = paginate(filtered, page, limit);
+        payload.count = paginated.items.length;
+        payload.pagination = paginated.pagination;
+        payload.services = paginated.items;
+      }
+
+      const { etag } = cacheSegments.CATALOG.set(cacheKey, payload);
+      res.setHeader('X-Cache', 'MISS');
+      res.setHeader('ETag', etag);
+      return sendJson(res, 200, payload);
     }
 
     // 10. GET /api/v1/services/:id (Single Service Details)
@@ -458,13 +491,30 @@ export async function handleApiRequest(req, res) {
       });
     }
 
-    // 11. GET /api/v1/categories (All Service Categories)
+    // 11. GET /api/v1/categories (All Service Categories + Caching)
     if (method === 'GET' && pathname === '/api/v1/categories') {
+      const cacheKey = 'all_categories';
+      const cached = cacheSegments.CATEGORIES.get(cacheKey);
+      if (cached) {
+        res.setHeader('X-Cache', 'HIT');
+        res.setHeader('ETag', cached.etag);
+        if (req.headers['if-none-match'] === cached.etag) {
+          res.writeHead(304);
+          res.end();
+          return;
+        }
+        return sendJson(res, 200, cached.value);
+      }
+
       const categories = db.getServiceCategories();
-      return sendJson(res, 200, {
+      const payload = {
         success: true,
         categories
-      });
+      };
+      const { etag } = cacheSegments.CATEGORIES.set(cacheKey, payload);
+      res.setHeader('X-Cache', 'MISS');
+      res.setHeader('ETag', etag);
+      return sendJson(res, 200, payload);
     }
 
     // 12. POST /api/v1/applications (Create Draft or Submit Application)
@@ -2020,6 +2070,17 @@ export async function handleApiRequest(req, res) {
         success: true,
         count: logs.length,
         logs
+      });
+    }
+
+    // 123. GET /api/v1/admin/cache-stats (Cache Performance & Credit-Efficiency Metrics)
+    if (method === 'GET' && pathname === '/api/v1/admin/cache-stats') {
+      const { user } = authenticateToken(req.headers.authorization);
+      requireRole(user, ['ADMIN']);
+      const stats = getPlatformCacheStats();
+      return sendJson(res, 200, {
+        success: true,
+        stats
       });
     }
 
