@@ -65,6 +65,14 @@ import {
   safeNotifyApplicationSubmitted,
   NotificationError
 } from './notifications/index.js';
+import {
+  createChatSession,
+  getChatSession,
+  sendMessage,
+  clearChatSession,
+  getSuggestedPrompts,
+  ChatbotError
+} from './chatbot/index.js';
 
 function readJsonBody(req, maxLimit = 10 * 1024 * 1024) {
   return new Promise((resolve, reject) => {
@@ -1154,6 +1162,88 @@ export async function handleApiRequest(req, res) {
         success: true,
         notification
       });
+    }
+
+    // ==========================================
+    // PHASE 15 — AI GOVERNMENT HELP CHATBOT ENDPOINTS
+    // ==========================================
+
+    // 51. GET /api/v1/chatbot/suggestions (Get Prompt Suggestions)
+    if (method === 'GET' && pathname === '/api/v1/chatbot/suggestions') {
+      const suggestions = getSuggestedPrompts();
+      return sendJson(res, 200, {
+        success: true,
+        count: suggestions.length,
+        suggestions
+      });
+    }
+
+    // 52. POST /api/v1/chatbot/sessions (Create New Chat Session)
+    if (method === 'POST' && pathname === '/api/v1/chatbot/sessions') {
+      let user = null;
+      if (req.headers.authorization) {
+        try {
+          const auth = authenticateToken(req.headers.authorization);
+          user = auth.user;
+        } catch (e) {}
+      }
+      const session = createChatSession(user);
+      return sendJson(res, 201, {
+        success: true,
+        session
+      });
+    }
+
+    // 53. GET /api/v1/chatbot/sessions/:id (Get Session Conversation)
+    const chatSessionMatch = pathname.match(/^\/api\/v1\/chatbot\/sessions\/([^/]+)$/);
+    if (method === 'GET' && chatSessionMatch) {
+      const sessionId = chatSessionMatch[1];
+      let user = null;
+      if (req.headers.authorization) {
+        try {
+          const auth = authenticateToken(req.headers.authorization);
+          user = auth.user;
+        } catch (e) {}
+      }
+      const session = getChatSession(user, sessionId);
+      return sendJson(res, 200, {
+        success: true,
+        session
+      });
+    }
+
+    // 54. POST /api/v1/chatbot/sessions/:id/messages (Send User Message)
+    const chatMsgMatch = pathname.match(/^\/api\/v1\/chatbot\/sessions\/([^/]+)\/messages$/);
+    if (method === 'POST' && chatMsgMatch) {
+      const sessionId = chatMsgMatch[1];
+      let user = null;
+      if (req.headers.authorization) {
+        try {
+          const auth = authenticateToken(req.headers.authorization);
+          user = auth.user;
+        } catch (e) {}
+      }
+      const body = await readJsonBody(req);
+      const result = await sendMessage(user, { sessionId, message: body.message });
+      return sendJson(res, 200, {
+        success: true,
+        reply: result.reply,
+        sessionId: result.session.sessionId
+      });
+    }
+
+    // 55. DELETE /api/v1/chatbot/sessions/:id (Clear Session History)
+    if (method === 'DELETE' && chatSessionMatch) {
+      const sessionId = chatSessionMatch[1];
+      let user = null;
+      if (req.headers.authorization) {
+        try {
+          const auth = authenticateToken(req.headers.authorization);
+          user = auth.user;
+        } catch (e) {}
+      }
+      const result = clearChatSession(user, sessionId);
+      return sendJson(res, 200, result);
     }
 
     // Unmatched API endpoint
