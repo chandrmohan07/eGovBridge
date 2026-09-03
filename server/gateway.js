@@ -5,6 +5,7 @@
  */
 
 import crypto from 'node:crypto';
+import { applySecurityHeaders, recordAuditEvent, AUDIT_EVENTS } from './security/index.js';
 
 // Rate Limiting Configuration (Configurable via process.env or test helper)
 export const rateLimitConfig = {
@@ -119,11 +120,9 @@ export async function apiGateway(req, res, downstreamHandler) {
   const requestId = incomingReqId || `req-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
   req.requestId = requestId;
 
-  // 2. Standard Security & CORS Headers
+  // 2. Comprehensive Security & CORS Headers
+  applySecurityHeaders(res, req);
   res.setHeader('X-Request-Id', requestId);
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Request-Id, X-Simulate-Timeout, X-Test-Rate-Limit');

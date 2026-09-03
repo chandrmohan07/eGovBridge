@@ -4,6 +4,7 @@
  */
 
 import { db, verifyPassword, ROLES } from './db.js';
+import { recordAuditEvent, AUDIT_EVENTS } from './security/index.js';
 
 export class AuthError extends Error {
   constructor(message, statusCode = 400) {
@@ -59,20 +60,24 @@ export function register({ email, password, name, phone, state, district }) {
  */
 export function login({ email, password }) {
   if (!email || !password) {
+    recordAuditEvent(AUDIT_EVENTS.LOGIN_FAILED, null, { email: email || 'MISSING', reason: 'MISSING_FIELDS' });
     throw new AuthError('Email and password are required', 400);
   }
 
   const user = db.findUserByEmail(email);
   if (!user) {
+    recordAuditEvent(AUDIT_EVENTS.LOGIN_FAILED, null, { email, reason: 'USER_NOT_FOUND' });
     throw new AuthError('Invalid email or password', 401);
   }
 
   const valid = verifyPassword(password, user.passwordHash, user.salt);
   if (!valid) {
+    recordAuditEvent(AUDIT_EVENTS.LOGIN_FAILED, user, { email, reason: 'INVALID_CREDENTIALS' });
     throw new AuthError('Invalid email or password', 401);
   }
 
   const session = db.createSession(user);
+  recordAuditEvent(AUDIT_EVENTS.LOGIN, user, { email: user.email, role: user.role });
 
   return {
     token: session.token,
@@ -86,6 +91,7 @@ export function login({ email, password }) {
  */
 export function logout(token) {
   if (!token) return false;
+  recordAuditEvent(AUDIT_EVENTS.LOGOUT, null, { tokenPrefix: token.slice(0, 8) });
   return db.deleteSession(token);
 }
 
@@ -121,11 +127,16 @@ export function authenticateToken(token) {
  */
 export function requireRole(user, allowedRoles) {
   if (!user || !user.role) {
+    recordAuditEvent(AUDIT_EVENTS.ACCESS_DENIED, null, { reason: 'NO_ACTIVE_SESSION' });
     throw new AuthError('Unauthorized: No active user session', 401);
   }
 
   const rolesArray = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
   if (!rolesArray.includes(user.role)) {
+    recordAuditEvent(AUDIT_EVENTS.ACCESS_DENIED, user, {
+      attemptedRole: user.role,
+      requiredRoles: rolesArray
+    });
     throw new AuthError(
       `Access Denied: Role '${user.role}' is not authorized to access this resource. Required: ${rolesArray.join(', ')}`,
       403
@@ -143,6 +154,10 @@ export function requireDepartmentScope(user, departmentCode) {
   requireRole(user, ['OFFICER']);
 
   if (user.departmentCode !== departmentCode) {
+    recordAuditEvent(AUDIT_EVENTS.ACCESS_DENIED, user, {
+      officerDepartment: user.departmentCode,
+      requiredDepartment: departmentCode
+    });
     throw new AuthError(
       `Access Denied: Officer is assigned to ${user.departmentCode} and cannot access data for department: ${departmentCode}`,
       403

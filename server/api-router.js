@@ -154,6 +154,11 @@ import {
   exportAdminReport,
   AdminError
 } from './admin/index.js';
+import {
+  getAuditEvents,
+  recordAuditEvent,
+  AUDIT_EVENTS
+} from './security/index.js';
 
 function readJsonBody(req, maxLimit = 10 * 1024 * 1024) {
   return new Promise((resolve, reject) => {
@@ -1999,6 +2004,23 @@ export async function handleApiRequest(req, res) {
       const format = url.searchParams.get('format') || 'json';
       const result = exportAdminReport(user, reportType, format);
       return sendJson(res, 200, result);
+    }
+
+    // 122. GET /api/v1/admin/audit-logs (Platform Audit Trail)
+    if (method === 'GET' && pathname === '/api/v1/admin/audit-logs') {
+      const { user } = authenticateToken(req.headers.authorization);
+      requireRole(user, ['ADMIN']);
+      const filters = {
+        eventType: url.searchParams.get('eventType'),
+        actorId: url.searchParams.get('actorId'),
+        limit: url.searchParams.get('limit')
+      };
+      const logs = getAuditEvents(filters);
+      return sendJson(res, 200, {
+        success: true,
+        count: logs.length,
+        logs
+      });
     }
 
     // Unmatched API endpoint
