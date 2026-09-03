@@ -73,6 +73,18 @@ import {
   getSuggestedPrompts,
   ChatbotError
 } from './chatbot/index.js';
+import {
+  listOpportunities,
+  getOpportunityById,
+  saveOpportunity,
+  removeSavedOpportunity,
+  getSavedOpportunities,
+  getRecommendedOpportunities,
+  createOpportunity,
+  updateOpportunity,
+  deleteOpportunity,
+  EmploymentError
+} from './employment/index.js';
 
 function readJsonBody(req, maxLimit = 10 * 1024 * 1024) {
   return new Promise((resolve, reject) => {
@@ -1243,6 +1255,108 @@ export async function handleApiRequest(req, res) {
         } catch (e) {}
       }
       const result = clearChatSession(user, sessionId);
+      return sendJson(res, 200, result);
+    }
+
+    // ==========================================
+    // PHASE 16 — EMPLOYMENT HUB ENDPOINTS
+    // ==========================================
+
+    // 56. GET /api/v1/employment/opportunities/recommended
+    if (method === 'GET' && pathname === '/api/v1/employment/opportunities/recommended') {
+      const { user } = authenticateToken(req.headers.authorization);
+      const result = getRecommendedOpportunities(user);
+      return sendJson(res, 200, result);
+    }
+
+    // 57. GET /api/v1/employment/saved (List Saved Opportunities)
+    if (method === 'GET' && pathname === '/api/v1/employment/saved') {
+      const { user } = authenticateToken(req.headers.authorization);
+      const result = getSavedOpportunities(user);
+      return sendJson(res, 200, result);
+    }
+
+    // 58. POST /api/v1/employment/saved/:id (Save Opportunity)
+    const empSaveMatch = pathname.match(/^\/api\/v1\/employment\/saved\/([^/]+)$/);
+    if (method === 'POST' && empSaveMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      const oppId = empSaveMatch[1];
+      const result = saveOpportunity(user, oppId);
+      return sendJson(res, 200, result);
+    }
+
+    // 59. DELETE /api/v1/employment/saved/:id (Remove Saved Opportunity)
+    if (method === 'DELETE' && empSaveMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      const oppId = empSaveMatch[1];
+      const result = removeSavedOpportunity(user, oppId);
+      return sendJson(res, 200, result);
+    }
+
+    // 60. GET /api/v1/employment/opportunities (List & Search Opportunities)
+    if (method === 'GET' && pathname === '/api/v1/employment/opportunities') {
+      let user = null;
+      if (req.headers.authorization) {
+        try {
+          const auth = authenticateToken(req.headers.authorization);
+          user = auth.user;
+        } catch (e) {}
+      }
+      const filters = {
+        search: url.searchParams.get('search') || '',
+        category: url.searchParams.get('category') || '',
+        opportunityType: url.searchParams.get('opportunityType') || '',
+        qualification: url.searchParams.get('qualification') || '',
+        status: url.searchParams.get('status') || '',
+        closingSoon: url.searchParams.get('closingSoon') === 'true',
+        sort: url.searchParams.get('sort') || 'newest',
+        limit: url.searchParams.get('limit') || '50',
+        offset: url.searchParams.get('offset') || '0'
+      };
+      const result = listOpportunities(filters, user);
+      return sendJson(res, 200, result);
+    }
+
+    // 61. POST /api/v1/employment/opportunities (Admin: Create Opportunity)
+    if (method === 'POST' && pathname === '/api/v1/employment/opportunities') {
+      const { user } = authenticateToken(req.headers.authorization);
+      requireRole(user, ['ADMIN']);
+      const body = await readJsonBody(req);
+      const result = createOpportunity(user, body);
+      return sendJson(res, 201, result);
+    }
+
+    // 62. GET /api/v1/employment/opportunities/:id (Get Opportunity Details)
+    const empIdMatch = pathname.match(/^\/api\/v1\/employment\/opportunities\/([^/]+)$/);
+    if (method === 'GET' && empIdMatch) {
+      const oppId = empIdMatch[1];
+      let user = null;
+      if (req.headers.authorization) {
+        try {
+          const auth = authenticateToken(req.headers.authorization);
+          user = auth.user;
+        } catch (e) {}
+      }
+      const result = getOpportunityById(oppId, user);
+      return sendJson(res, 200, result);
+    }
+
+    // 63. PUT /api/v1/employment/opportunities/:id (Admin: Update Opportunity)
+    if (method === 'PUT' && empIdMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      requireRole(user, ['ADMIN']);
+      const oppId = empIdMatch[1];
+      const body = await readJsonBody(req);
+      const result = updateOpportunity(user, oppId, body);
+      return sendJson(res, 200, result);
+    }
+
+    // 64. DELETE /api/v1/employment/opportunities/:id (Admin: Deactivate Opportunity)
+    if (method === 'DELETE' && empIdMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      requireRole(user, ['ADMIN']);
+      const oppId = empIdMatch[1];
+      const result = deleteOpportunity(user, oppId);
       return sendJson(res, 200, result);
     }
 

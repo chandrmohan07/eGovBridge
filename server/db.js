@@ -339,6 +339,149 @@ export const notifications = [
 // 10. User Notification Preferences Store
 export const notificationPreferences = new Map();
 
+// 11. Employment Opportunities Store (Phase 16 Foundation)
+// MOCK / DEMO DATA — NOT A LIVE GOVERNMENT INTEGRATION
+export const EMPLOYMENT_OPPORTUNITIES = [
+  {
+    id: 'EMP-2026-001',
+    title: 'Scientific Officer / Technical Assistant (IT)',
+    organization: 'National Informatics Centre (NIC)',
+    department: 'Ministry of Electronics and Information Technology',
+    category: 'Government Jobs',
+    opportunityType: 'JOB',
+    description: 'Recruitment of Scientific Officers and Technical Assistants for cloud engineering, cyber security operations, and digital governance infrastructure.',
+    eligibility: 'B.Tech/B.E. in Computer Science / IT or MCA with min 60% aggregate marks.',
+    qualification: 'Graduate',
+    skills: ['Software Engineering', 'Cloud Infrastructure', 'Cyber Security', 'Python', 'Networking'],
+    location: 'New Delhi / Remote Opportunities Available',
+    vacancies: 45,
+    salary: 'Level 10 (₹56,100 - ₹1,77,500)',
+    applicationStartDate: '2026-08-15',
+    applicationEndDate: '2026-09-25',
+    deadline: '2026-09-25',
+    applicationUrl: 'https://www.ncs.gov.in',
+    source: 'National Career Service (NCS)',
+    sourceType: 'GOVERNMENT_PORTAL',
+    status: 'ACTIVE',
+    verified: true,
+    isMock: true,
+    lastVerifiedAt: '2026-09-03',
+    createdAt: '2026-08-15T09:00:00.000Z',
+    updatedAt: '2026-09-03T10:00:00.000Z'
+  },
+  {
+    id: 'EMP-2026-002',
+    title: 'Graduate Apprentice Trainee (Renewable Energy)',
+    organization: 'Solar Energy Corporation of India (SECI)',
+    department: 'Ministry of New and Renewable Energy',
+    category: 'Apprenticeships',
+    opportunityType: 'APPRENTICESHIP',
+    description: 'One-year structured apprenticeship training covering solar PV farm operation, green hydrogen grid interfacing, and project management.',
+    eligibility: 'Graduates in Electrical / Mechanical / Civil Engineering (Passout 2024-2026).',
+    qualification: 'Graduate',
+    skills: ['Electrical Systems', 'Solar PV Design', 'AutoCAD', 'Field Inspection'],
+    location: 'Multiple State Offices',
+    vacancies: 120,
+    salary: 'Stipend: ₹18,000 / month',
+    applicationStartDate: '2026-08-20',
+    applicationEndDate: '2026-09-18',
+    deadline: '2026-09-18',
+    applicationUrl: 'https://www.ncs.gov.in',
+    source: 'National Career Service (NCS)',
+    sourceType: 'GOVERNMENT_PORTAL',
+    status: 'ACTIVE',
+    verified: true,
+    isMock: true,
+    lastVerifiedAt: '2026-09-03',
+    createdAt: '2026-08-20T09:00:00.000Z',
+    updatedAt: '2026-09-03T10:00:00.000Z'
+  },
+  {
+    id: 'EMP-2026-003',
+    title: 'Staff Selection Commission (SSC) Junior Secretariat Assistant',
+    organization: 'Staff Selection Commission',
+    department: 'Department of Personnel and Training',
+    category: 'Government Jobs',
+    opportunityType: 'JOB',
+    description: 'Recruitment for Lower Division Clerks (LDC) and Junior Secretariat Assistants (JSA) across Central Ministries and Departments.',
+    eligibility: '12th Standard or equivalent with minimum typing speed of 35 wpm in English or 30 wpm in Hindi.',
+    qualification: '12th Pass',
+    skills: ['Office Administration', 'Typing', 'Data Entry', 'Records Management'],
+    location: 'All India Placement',
+    vacancies: 3400,
+    salary: 'Level 2 (₹19,900 - ₹63,200)',
+    applicationStartDate: '2026-08-10',
+    applicationEndDate: '2026-10-05',
+    deadline: '2026-10-05',
+    applicationUrl: 'https://www.ncs.gov.in',
+    source: 'National Career Service (NCS)',
+    sourceType: 'GOVERNMENT_PORTAL',
+    status: 'ACTIVE',
+    verified: true,
+    isMock: true,
+    lastVerifiedAt: '2026-09-03',
+    createdAt: '2026-08-10T09:00:00.000Z',
+    updatedAt: '2026-09-03T10:00:00.000Z'
+  },
+  {
+    id: 'EMP-2026-004',
+    title: 'Pradhan Mantri Kaushal Vikas Yojana (PMKVY 4.0) - Drone Technology & AI Operations',
+    organization: 'National Skill Development Corporation (NSDC)',
+    department: 'Ministry of Skill Development and Entrepreneurship',
+    category: 'Skill Development',
+    opportunityType: 'TRAINING',
+    description: 'Government-sponsored industry training on agricultural drone maintenance, geo-spatial mapping, and AI sensor calibration.',
+    eligibility: '10th / 12th / ITI Passouts with keen interest in emerging robotics and spatial tech.',
+    qualification: '10th Pass',
+    skills: ['Drone Assembly', 'Flight Control', 'Sensor Calibration', 'GIS Basics'],
+    location: 'State Skill Development Centres (Hybrid/Offline)',
+    vacancies: 500,
+    salary: 'Free Certification + ₹8,000 Toolkit Stipend',
+    applicationStartDate: '2026-08-01',
+    applicationEndDate: '2026-10-15',
+    deadline: '2026-10-15',
+    applicationUrl: 'https://www.myscheme.gov.in',
+    source: 'National Skill Development Portal',
+    sourceType: 'GOVERNMENT_PORTAL',
+    status: 'ACTIVE',
+    verified: true,
+    isMock: true,
+    lastVerifiedAt: '2026-09-03',
+    createdAt: '2026-08-01T09:00:00.000Z',
+    updatedAt: '2026-09-03T10:00:00.000Z'
+  },
+  {
+    id: 'EMP-2026-005',
+    title: 'Mahatma Gandhi National Rural Employment Guarantee Scheme (MGNREGS) Work Allocation',
+    organization: 'Ministry of Rural Development',
+    department: 'Department of Rural Development',
+    category: 'Employment Schemes',
+    opportunityType: 'SCHEME',
+    description: 'Statutory 100 days of guaranteed wage employment in every financial year to every rural household whose adult members volunteer for unskilled manual work.',
+    eligibility: 'Adult members of rural households holding verified Job Cards.',
+    qualification: 'None (Unskilled/Semi-Skilled)',
+    skills: ['Water Conservation', 'Rural Infrastructure', 'Afforestation', 'Land Levelling'],
+    location: 'Gram Panchayat Jurisdictions Nationwide',
+    vacancies: 10000,
+    salary: 'State Daily Wage Rate (₹240 - ₹374 / day)',
+    applicationStartDate: '2026-04-01',
+    applicationEndDate: '2027-03-31',
+    deadline: '2027-03-31',
+    applicationUrl: 'https://www.myscheme.gov.in',
+    source: 'Ministry of Rural Development Portal',
+    sourceType: 'GOVERNMENT_PORTAL',
+    status: 'ACTIVE',
+    verified: true,
+    isMock: true,
+    lastVerifiedAt: '2026-09-03',
+    createdAt: '2026-04-01T09:00:00.000Z',
+    updatedAt: '2026-09-03T10:00:00.000Z'
+  }
+];
+
+// 12. User Saved Opportunities Map (userId -> Set<opportunityId>)
+export const savedOpportunities = new Map();
+
 // Helper database functions
 export const db = {
   findUserByEmail(email) {
@@ -774,6 +917,141 @@ export const db = {
     const updated = { ...current, ...prefs };
     notificationPreferences.set(userId, updated);
     return updated;
+  },
+
+  getEmploymentOpportunities(filters = {}) {
+    let list = [...EMPLOYMENT_OPPORTUNITIES];
+
+    if (filters.status && filters.status !== 'ALL') {
+      const st = filters.status.toUpperCase();
+      list = list.filter(o => o.status === st);
+    } else if (!filters.status) {
+      list = list.filter(o => o.status === 'ACTIVE');
+    }
+
+    if (filters.category && filters.category !== 'ALL') {
+      const cat = filters.category.toLowerCase();
+      list = list.filter(o => o.category.toLowerCase() === cat);
+    }
+
+    if (filters.opportunityType && filters.opportunityType !== 'ALL') {
+      const tp = filters.opportunityType.toUpperCase();
+      list = list.filter(o => o.opportunityType === tp);
+    }
+
+    if (filters.qualification && filters.qualification !== 'ALL') {
+      const q = filters.qualification.toLowerCase();
+      list = list.filter(o => o.qualification.toLowerCase().includes(q));
+    }
+
+    if (filters.search) {
+      const s = filters.search.toLowerCase().trim();
+      list = list.filter(o => 
+        o.title.toLowerCase().includes(s) ||
+        o.organization.toLowerCase().includes(s) ||
+        o.department.toLowerCase().includes(s) ||
+        o.description.toLowerCase().includes(s) ||
+        (o.skills || []).some(sk => sk.toLowerCase().includes(s))
+      );
+    }
+
+    if (filters.closingSoon) {
+      const now = Date.now();
+      const sevenDays = 7 * 24 * 60 * 60 * 1000;
+      list = list.filter(o => {
+        if (!o.deadline) return false;
+        const d = new Date(o.deadline).getTime();
+        return d > now && (d - now) <= sevenDays;
+      });
+    }
+
+    if (filters.sort === 'deadline') {
+      list.sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+    } else {
+      list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+
+    const limit = Math.min(parseInt(filters.limit || '50', 10), 100);
+    const offset = Math.max(parseInt(filters.offset || '0', 10), 0);
+    const paged = list.slice(offset, offset + limit);
+
+    return {
+      total: list.length,
+      limit,
+      offset,
+      opportunities: paged
+    };
+  },
+
+  getEmploymentOpportunityById(id) {
+    return EMPLOYMENT_OPPORTUNITIES.find(o => o.id === id);
+  },
+
+  createEmploymentOpportunity(data) {
+    const newId = `EMP-2026-${Math.floor(100 + Math.random() * 900)}`;
+    const now = new Date().toISOString();
+    const opportunity = {
+      id: newId,
+      title: data.title,
+      organization: data.organization,
+      department: data.department || 'Central/State Government',
+      category: data.category || 'Government Jobs',
+      opportunityType: data.opportunityType || 'JOB',
+      description: data.description || '',
+      eligibility: data.eligibility || 'As per official advertisement',
+      qualification: data.qualification || 'Graduate',
+      skills: Array.isArray(data.skills) ? data.skills : [],
+      location: data.location || 'All India',
+      vacancies: Number(data.vacancies) || 1,
+      salary: data.salary || 'As per rules',
+      applicationStartDate: data.applicationStartDate || now.slice(0, 10),
+      applicationEndDate: data.applicationEndDate || data.deadline,
+      deadline: data.deadline,
+      applicationUrl: data.applicationUrl || 'https://www.ncs.gov.in',
+      source: data.source || 'National Career Service (NCS)',
+      sourceType: data.sourceType || 'GOVERNMENT_PORTAL',
+      status: data.status || 'ACTIVE',
+      verified: true,
+      isMock: data.isMock !== undefined ? data.isMock : true,
+      lastVerifiedAt: now.slice(0, 10),
+      createdAt: now,
+      updatedAt: now
+    };
+    EMPLOYMENT_OPPORTUNITIES.unshift(opportunity);
+    return opportunity;
+  },
+
+  updateEmploymentOpportunity(id, updates) {
+    const opp = this.getEmploymentOpportunityById(id);
+    if (!opp) return null;
+    Object.assign(opp, updates, { updatedAt: new Date().toISOString() });
+    return opp;
+  },
+
+  deleteEmploymentOpportunity(id) {
+    const index = EMPLOYMENT_OPPORTUNITIES.findIndex(o => o.id === id);
+    if (index === -1) return false;
+    EMPLOYMENT_OPPORTUNITIES[index].status = 'INACTIVE';
+    EMPLOYMENT_OPPORTUNITIES[index].updatedAt = new Date().toISOString();
+    return true;
+  },
+
+  saveUserOpportunity(userId, oppId) {
+    if (!savedOpportunities.has(userId)) {
+      savedOpportunities.set(userId, new Set());
+    }
+    savedOpportunities.get(userId).add(oppId);
+    return true;
+  },
+
+  removeUserOpportunity(userId, oppId) {
+    if (!savedOpportunities.has(userId)) return false;
+    return savedOpportunities.get(userId).delete(oppId);
+  },
+
+  getUserSavedOpportunities(userId) {
+    const oppIds = savedOpportunities.get(userId) || new Set();
+    return EMPLOYMENT_OPPORTUNITIES.filter(o => oppIds.has(o.id));
   }
 };
 
@@ -781,6 +1059,8 @@ db.notifications = notifications;
 db.notificationPreferences = notificationPreferences;
 db.vaultDocuments = vaultDocuments;
 db.vaultAuditLogs = vaultAuditLogs;
+db.employmentOpportunities = EMPLOYMENT_OPPORTUNITIES;
+db.savedOpportunities = savedOpportunities;
 
 // 6. Canonical Government Service Catalog (Phase 4 Foundation)
 export const SERVICES = [

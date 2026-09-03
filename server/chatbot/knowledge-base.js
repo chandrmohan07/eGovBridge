@@ -115,6 +115,17 @@ export class KnowledgeBase {
       }
     }
 
+    // 5. Check Employment Opportunities & Schemes
+    const isEmploymentQuery = ['job', 'jobs', 'employment', 'apprenticeship', 'apprenticeships', 'recruitment', 'vacancy', 'vacancies', 'skill', 'training'].some(w => queryTokens.has(w) || q.includes(w));
+    if (isEmploymentQuery && db.getEmploymentOpportunities) {
+      const empRes = db.getEmploymentOpportunities({ search: q, limit: 3 });
+      const activeOpps = empRes.opportunities.length > 0 ? empRes.opportunities : db.getEmploymentOpportunities({ limit: 1 }).opportunities;
+      if (activeOpps.length > 0) {
+        results.matchedEmployment = activeOpps[0];
+        results.sources.push(`National Career Service (NCS) / Employment Hub: ${activeOpps[0].title}`);
+      }
+    }
+
     return results;
   }
 
@@ -221,7 +232,33 @@ export class KnowledgeBase {
       };
     }
 
-    // Case 6: Fallback for uncataloged / unverified topics
+    // Case 6: Matched Employment Opportunity
+    if (knowledge.matchedEmployment) {
+      const emp = knowledge.matchedEmployment;
+      responseText = `**${emp.title}**\n\n` +
+        `• **Organization:** ${emp.organization}\n` +
+        `• **Category:** ${emp.category}\n` +
+        `• **Eligibility:** ${emp.eligibility}\n` +
+        `• **Vacancies:** ${emp.vacancies} Positions\n` +
+        `• **Application Deadline:** ${emp.deadline}\n` +
+        `• **Salary / Stipend:** ${emp.salary || 'As per rules'}\n\n` +
+        `*Official Source: ${emp.source} (${emp.applicationUrl})*\n\n` +
+        `*(MOCK / DEMO DATA — NOT A LIVE GOVERNMENT INTEGRATION)*`;
+
+      actions.push({
+        type: 'NAVIGATE',
+        target: 'employment',
+        label: 'Open Employment Hub'
+      });
+
+      return {
+        text: responseText,
+        sources: knowledge.sources,
+        actions
+      };
+    }
+
+    // Case 7: Fallback for uncataloged / unverified topics
     return {
       text: "I don't have verified information for that specific query in the official portal knowledge base.\n\nPlease explore our **Government Services Catalog** for cataloged services, or check the official national portals at **myScheme.gov.in** and **scholarships.gov.in**.",
       sources: ['National Citizen Services Directory'],
