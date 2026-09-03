@@ -482,6 +482,269 @@ export const EMPLOYMENT_OPPORTUNITIES = [
 // 12. User Saved Opportunities Map (userId -> Set<opportunityId>)
 export const savedOpportunities = new Map();
 
+// 13. Scholarships Store (Phase 17 Foundation)
+// MOCK / DEMO DATA — NOT A LIVE GOVERNMENT INTEGRATION
+export const SCHOLARSHIPS = [
+  {
+    id: 'SCH-2026-001',
+    name: 'National Means-cum-Merit Scholarship Scheme (NMMSS)',
+    title: 'National Means-cum-Merit Scholarship Scheme (NMMSS)',
+    provider: 'Ministry of Education',
+    ministry: 'Ministry of Education',
+    department: 'Department of School Education & Literacy',
+    category: 'Need-based / School Education',
+    description: 'Centrally sponsored scheme providing scholarships to meritorious students of economically weaker sections to arrest their drop out at class VIII and encourage them to continue study at secondary stage.',
+    eligibility: 'Class 9th to 12th students with parental income ≤ ₹3,50,000 per annum and min 55% marks in Class 7 exam.',
+    qualification: 'Class 8 / 9',
+    incomeCriteria: 'Parental income ≤ ₹3,50,000 per annum',
+    benefit: '₹12,000 per annum',
+    benefitAmount: '₹12,000 per annum',
+    requiredDocuments: [
+      'Income Certificate',
+      'Class 7 / 8 Marksheet',
+      'Aadhaar Card',
+      'Bank Account Passbook'
+    ],
+    applicationStartDate: '2026-08-01',
+    applicationEndDate: '2026-09-30',
+    deadline: '2026-09-30',
+    applicationUrl: 'https://scholarships.gov.in',
+    relatedServiceId: 'SRV-EDU-001',
+    source: 'National Scholarship Portal',
+    sourceType: 'GOVERNMENT_PORTAL',
+    status: 'ACTIVE',
+    verified: true,
+    isMock: true,
+    lastVerifiedAt: '2026-09-03',
+    createdAt: '2026-08-01T09:00:00.000Z',
+    updatedAt: '2026-09-03T10:00:00.000Z'
+  },
+  {
+    id: 'SCH-2026-002',
+    name: 'Central Sector Scheme of Scholarships for College and University Students',
+    title: 'Central Sector Scheme of Scholarships for College and University Students',
+    provider: 'Department of Higher Education',
+    ministry: 'Department of Higher Education',
+    department: 'Department of Higher Education',
+    category: 'Merit-based / Higher Education',
+    description: 'Financial assistance to meritorious students from low-income families to meet day-to-day expenses while pursuing higher studies in colleges and universities.',
+    eligibility: 'Students scoring above the 80th percentile in relevant stream in Class 12 board exams; family income < ₹4,50,000 per annum.',
+    qualification: 'Graduate / Class 12 Passed',
+    incomeCriteria: 'Family income < ₹4,50,000 per annum',
+    benefit: '₹12,000 - ₹20,000 per annum',
+    benefitAmount: '₹12,000 - ₹20,000 per annum',
+    requiredDocuments: [
+      'Class 12 Board Marksheet',
+      'Income Certificate',
+      'College Admission ID Card',
+      'Bank Account Passbook'
+    ],
+    applicationStartDate: '2026-08-15',
+    applicationEndDate: '2026-10-15',
+    deadline: '2026-10-15',
+    applicationUrl: 'https://scholarships.gov.in',
+    relatedServiceId: 'SRV-EDU-007',
+    source: 'National Scholarship Portal',
+    sourceType: 'GOVERNMENT_PORTAL',
+    status: 'ACTIVE',
+    verified: true,
+    isMock: true,
+    lastVerifiedAt: '2026-09-03',
+    createdAt: '2026-08-15T09:00:00.000Z',
+    updatedAt: '2026-09-03T10:00:00.000Z'
+  },
+  {
+    id: 'SCH-2026-003',
+    name: 'Pragati Scholarship Scheme for Girl Students (Technical Degree)',
+    title: 'Pragati Scholarship Scheme for Girl Students (Technical Degree)',
+    provider: 'All India Council for Technical Education (AICTE)',
+    ministry: 'AICTE',
+    department: 'Ministry of Education',
+    category: 'Girls Empowerment / Technical Education',
+    description: 'Scheme aimed at providing assistance for advancement of girls pursuing technical education with tuition assistance and annual contingency.',
+    eligibility: 'Girl students admitted to 1st year degree program; maximum 2 girls per family; family income < ₹8,00,000 per annum.',
+    qualification: 'Technical Undergraduate Degree (B.Tech / B.E.)',
+    incomeCriteria: 'Family income < ₹8,00,000 per annum',
+    benefit: '₹50,000 per annum for tuition & contingency',
+    benefitAmount: '₹50,000 per annum for tuition & contingency',
+    requiredDocuments: [
+      'College Admission Letter',
+      'Income Certificate',
+      'Aadhaar Card',
+      'Family Ration Card'
+    ],
+    applicationStartDate: '2026-08-20',
+    applicationEndDate: '2026-10-31',
+    deadline: '2026-10-31',
+    applicationUrl: 'https://scholarships.gov.in',
+    relatedServiceId: 'SRV-EDU-001',
+    source: 'National Scholarship Portal',
+    sourceType: 'GOVERNMENT_PORTAL',
+    status: 'ACTIVE',
+    verified: true,
+    isMock: true,
+    lastVerifiedAt: '2026-09-03',
+    createdAt: '2026-08-20T09:00:00.000Z',
+    updatedAt: '2026-09-03T10:00:00.000Z'
+  }
+];
+
+// 14. Government Schemes Store (Phase 17 Foundation)
+// MOCK / DEMO DATA — NOT A LIVE GOVERNMENT INTEGRATION
+export const GOVERNMENT_SCHEMES = [
+  {
+    id: 'SCHEME-2026-001',
+    name: 'Pradhan Mantri Kaushal Vikas Yojana 4.0 (PMKVY)',
+    title: 'Pradhan Mantri Kaushal Vikas Yojana 4.0 (PMKVY)',
+    department: 'Ministry of Skill Development & Entrepreneurship',
+    category: 'Skill Development',
+    description: 'Flagship scheme for skill training of youth across emerging sectors including Industry 4.0, drones, AI, and green energy.',
+    purpose: 'To enable Indian youth to take up industry-relevant skill training that will help them in securing a better livelihood.',
+    eligibility: 'Unemployed youth or school/college dropouts aged 15-45 holding valid Aadhaar.',
+    benefits: 'Free industry-aligned certification, soft skills training, toolkit stipend, and placement support',
+    targetAudience: 'Unemployed youth, school/college dropouts (Ages 15-45)',
+    requiredDocuments: [
+      'Aadhaar Card',
+      'Educational Certificate / School Leaving Proof',
+      'Bank Account Details'
+    ],
+    applicationProcess: 'Online via Skill India Digital platform or physical registration at Pradhan Mantri Kaushal Kendra (PMKK).',
+    applicationUrl: 'https://www.myscheme.gov.in',
+    source: 'myScheme Portal',
+    sourceType: 'GOVERNMENT_PORTAL',
+    status: 'ACTIVE',
+    verified: true,
+    isMock: true,
+    lastVerifiedAt: '2026-09-03',
+    createdAt: '2026-07-01T09:00:00.000Z',
+    updatedAt: '2026-09-03T10:00:00.000Z'
+  },
+  {
+    id: 'SCHEME-2026-002',
+    name: 'PM SVANidhi (Micro-Credit for Street Vendors)',
+    title: 'PM SVANidhi (Micro-Credit for Street Vendors)',
+    department: 'Ministry of Housing and Urban Affairs',
+    category: 'Financial Inclusion',
+    description: 'Special micro-credit facility providing affordable working capital loans to street vendors to resume their livelihoods.',
+    purpose: 'To facilitate collateral-free working capital loans with interest subsidies and digital transaction incentives.',
+    eligibility: 'Urban and peri-urban street vendors possessing Certificate of Vending or Identity Card issued by Urban Local Bodies.',
+    benefits: 'Collateral-free working capital loan up to ₹50,000 with 7% interest subsidy and digital cashback',
+    targetAudience: 'Urban and peri-urban street vendors',
+    requiredDocuments: [
+      'Vending Certificate / Letter of Recommendation from ULB',
+      'Aadhaar Card',
+      'Bank Account Passbook'
+    ],
+    applicationProcess: 'Direct application through PM SVANidhi Portal or via designated Common Service Centres (CSC).',
+    applicationUrl: 'https://www.myscheme.gov.in',
+    source: 'myScheme Portal',
+    sourceType: 'GOVERNMENT_PORTAL',
+    status: 'ACTIVE',
+    verified: true,
+    isMock: true,
+    lastVerifiedAt: '2026-09-03',
+    createdAt: '2026-07-15T09:00:00.000Z',
+    updatedAt: '2026-09-03T10:00:00.000Z'
+  },
+  {
+    id: 'SCHEME-2026-003',
+    name: 'Pradhan Mantri Fasal Bima Yojana (PMFBY)',
+    title: 'Pradhan Mantri Fasal Bima Yojana (PMFBY)',
+    department: 'Ministry of Agriculture & Farmers Welfare',
+    category: 'Agriculture',
+    description: 'Actuarial yield and weather-based insurance scheme providing comprehensive financial support to farmers suffering crop loss/damage.',
+    purpose: 'To stabilize the income of farmers to ensure their continuance in farming and encourage adoption of modern practices.',
+    eligibility: 'All farmers growing notified crops in notified areas including sharecroppers and tenant farmers.',
+    benefits: 'Comprehensive crop insurance against non-preventable natural risks with premium capped at 1.5% to 2%',
+    targetAudience: 'Farmers growing notified crops in notified areas',
+    requiredDocuments: [
+      'Land Record (Khasra/Khatauni/ROR)',
+      'Sowing Certificate / Crop Declaration',
+      'Aadhaar Card',
+      'Bank Account Passbook'
+    ],
+    applicationProcess: 'Online through National Crop Insurance Portal or via financial institutions / PACS / CSC.',
+    applicationUrl: 'https://www.myscheme.gov.in',
+    relatedServiceId: 'SRV-AGR-005',
+    source: 'myScheme Portal',
+    sourceType: 'GOVERNMENT_PORTAL',
+    status: 'ACTIVE',
+    verified: true,
+    isMock: true,
+    lastVerifiedAt: '2026-09-03',
+    createdAt: '2026-06-01T09:00:00.000Z',
+    updatedAt: '2026-09-03T10:00:00.000Z'
+  }
+];
+
+// 15. News & Announcements Store (Phase 17 Foundation)
+// MOCK / DEMO DATA — NOT A LIVE GOVERNMENT INTEGRATION
+export const ANNOUNCEMENTS = [
+  {
+    id: 'NEWS-2026-001',
+    title: 'Ministry of Education extends deadline for Central Sector Scholarships to Oct 15',
+    summary: 'Eligible undergraduate students can now submit their verified online applications via the unified portal until October 15, 2026.',
+    content: 'The Department of Higher Education has officially extended the deadline for both fresh and renewal applications under the Central Sector Scheme of Scholarships for College and University Students. Verification windows for participating institutions have been extended synchronously.',
+    department: 'Ministry of Education',
+    category: 'Deadlines',
+    publishedAt: '2026-09-02',
+    expiryDate: '2026-10-15',
+    source: 'Press Information Bureau (PIB)',
+    sourceType: 'GOVERNMENT_PORTAL',
+    sourceUrl: 'https://pib.gov.in',
+    officialReference: 'PIB-PR-2026-EDU-9912',
+    status: 'PUBLISHED',
+    verified: true,
+    isMock: true,
+    lastVerifiedAt: '2026-09-03',
+    createdAt: '2026-09-02T10:00:00.000Z',
+    updatedAt: '2026-09-03T10:00:00.000Z'
+  },
+  {
+    id: 'NEWS-2026-002',
+    title: 'Interoperable Data Exchange Standard v1.2 implemented across 4 central ministries',
+    summary: 'New secure gateway reduces citizen document submission burden by cross-validating records automatically between Revenue and Education databases.',
+    content: 'The National e-Governance Division (NeGD) has certified compliance with Inter-Department Data Exchange Specifications v1.2. The system guarantees end-to-end payload sanitization and eliminates redundant physical paper submissions.',
+    department: 'Ministry of Electronics and IT',
+    category: 'Service Updates',
+    publishedAt: '2026-08-30',
+    expiryDate: '2026-12-31',
+    source: 'Press Information Bureau (PIB)',
+    sourceType: 'GOVERNMENT_PORTAL',
+    sourceUrl: 'https://pib.gov.in',
+    officialReference: 'PIB-PR-2026-MEITY-4410',
+    status: 'PUBLISHED',
+    verified: true,
+    isMock: true,
+    lastVerifiedAt: '2026-09-03',
+    createdAt: '2026-08-30T14:30:00.000Z',
+    updatedAt: '2026-09-03T10:00:00.000Z'
+  },
+  {
+    id: 'NEWS-2026-003',
+    title: 'Special recruitment drive for 10,000 apprentice positions announced under NCS',
+    summary: 'Government undertakings and recognized private partners open registrations for technical apprentices with monthly stipend guarantee.',
+    content: 'The Ministry of Labour & Employment has unveiled opportunities across 28 states and union territories for ITI, diploma, and engineering degree graduates under the National Apprenticeship Promotion Scheme (NAPS).',
+    department: 'Ministry of Labour & Employment',
+    category: 'Employment',
+    publishedAt: '2026-08-25',
+    expiryDate: '2026-10-31',
+    source: 'Press Information Bureau (PIB)',
+    sourceType: 'GOVERNMENT_PORTAL',
+    sourceUrl: 'https://pib.gov.in',
+    officialReference: 'PIB-PR-2026-MOLE-1102',
+    status: 'PUBLISHED',
+    verified: true,
+    isMock: true,
+    lastVerifiedAt: '2026-09-03',
+    createdAt: '2026-08-25T11:00:00.000Z',
+    updatedAt: '2026-09-03T10:00:00.000Z'
+  }
+];
+
+// 16. User Saved Content Map (userId -> Set<type:id>)
+export const savedHubItems = new Map();
+
 // Helper database functions
 export const db = {
   findUserByEmail(email) {
@@ -1052,6 +1315,327 @@ export const db = {
   getUserSavedOpportunities(userId) {
     const oppIds = savedOpportunities.get(userId) || new Set();
     return EMPLOYMENT_OPPORTUNITIES.filter(o => oppIds.has(o.id));
+  },
+
+  // ----------------------------------------------------
+  // Phase 17 — Scholarships, Schemes & Announcements Helpers
+  // ----------------------------------------------------
+  getScholarships(filters = {}) {
+    let list = [...SCHOLARSHIPS];
+
+    if (filters.status && filters.status !== 'ALL') {
+      const st = filters.status.toUpperCase();
+      list = list.filter(s => s.status === st);
+    } else if (!filters.status) {
+      list = list.filter(s => s.status === 'ACTIVE');
+    }
+
+    if (filters.category && filters.category !== 'ALL') {
+      const cat = filters.category.toLowerCase();
+      list = list.filter(s => s.category.toLowerCase().includes(cat));
+    }
+
+    if (filters.search) {
+      const s = filters.search.toLowerCase().trim();
+      list = list.filter(item => 
+        item.title.toLowerCase().includes(s) ||
+        item.ministry.toLowerCase().includes(s) ||
+        item.eligibility.toLowerCase().includes(s) ||
+        item.description.toLowerCase().includes(s)
+      );
+    }
+
+    if (filters.closingSoon) {
+      const now = Date.now();
+      const sevenDays = 7 * 24 * 60 * 60 * 1000;
+      list = list.filter(item => {
+        if (!item.deadline) return false;
+        const d = new Date(item.deadline).getTime();
+        return d > now && (d - now) <= sevenDays;
+      });
+    }
+
+    if (filters.sort === 'deadline') {
+      list.sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+    } else {
+      list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+
+    const limit = Math.min(parseInt(filters.limit || '50', 10), 100);
+    const offset = Math.max(parseInt(filters.offset || '0', 10), 0);
+    const paged = list.slice(offset, offset + limit);
+
+    return {
+      total: list.length,
+      limit,
+      offset,
+      scholarships: paged
+    };
+  },
+
+  getScholarshipById(id) {
+    return SCHOLARSHIPS.find(s => s.id === id);
+  },
+
+  createScholarship(data) {
+    const newId = `SCH-2026-${Math.floor(100 + Math.random() * 900)}`;
+    const now = new Date().toISOString();
+    const sch = {
+      id: newId,
+      name: data.name || data.title,
+      title: data.title || data.name,
+      provider: data.provider || data.ministry || 'Ministry of Education',
+      ministry: data.ministry || data.provider || 'Ministry of Education',
+      department: data.department || 'Central Scholarship Division',
+      category: data.category || 'General',
+      description: data.description || '',
+      eligibility: data.eligibility || 'As per scheme guidelines',
+      qualification: data.qualification || 'Graduate',
+      incomeCriteria: data.incomeCriteria || '',
+      benefit: data.benefit || data.benefitAmount || 'Financial Support',
+      benefitAmount: data.benefitAmount || data.benefit || 'Financial Support',
+      requiredDocuments: Array.isArray(data.requiredDocuments) ? data.requiredDocuments : ['Income Certificate', 'Aadhaar Card'],
+      applicationStartDate: data.applicationStartDate || now.slice(0, 10),
+      applicationEndDate: data.applicationEndDate || data.deadline,
+      deadline: data.deadline,
+      applicationUrl: data.applicationUrl || 'https://scholarships.gov.in',
+      relatedServiceId: data.relatedServiceId || null,
+      source: data.source || 'National Scholarship Portal',
+      sourceType: data.sourceType || 'GOVERNMENT_PORTAL',
+      status: data.status || 'ACTIVE',
+      verified: true,
+      isMock: true,
+      lastVerifiedAt: now.slice(0, 10),
+      createdAt: now,
+      updatedAt: now
+    };
+    SCHOLARSHIPS.unshift(sch);
+    return sch;
+  },
+
+  updateScholarship(id, updates) {
+    const sch = this.getScholarshipById(id);
+    if (!sch) return null;
+    Object.assign(sch, updates, { updatedAt: new Date().toISOString() });
+    return sch;
+  },
+
+  deleteScholarship(id) {
+    const idx = SCHOLARSHIPS.findIndex(s => s.id === id);
+    if (idx === -1) return false;
+    SCHOLARSHIPS[idx].status = 'INACTIVE';
+    SCHOLARSHIPS[idx].updatedAt = new Date().toISOString();
+    return true;
+  },
+
+  getSchemes(filters = {}) {
+    let list = [...GOVERNMENT_SCHEMES];
+
+    if (filters.status && filters.status !== 'ALL') {
+      const st = filters.status.toUpperCase();
+      list = list.filter(s => s.status === st);
+    } else if (!filters.status) {
+      list = list.filter(s => s.status === 'ACTIVE');
+    }
+
+    if (filters.category && filters.category !== 'ALL') {
+      const cat = filters.category.toLowerCase();
+      list = list.filter(s => s.category.toLowerCase().includes(cat));
+    }
+
+    if (filters.department && filters.department !== 'ALL') {
+      const dep = filters.department.toLowerCase();
+      list = list.filter(s => s.department.toLowerCase().includes(dep));
+    }
+
+    if (filters.search) {
+      const s = filters.search.toLowerCase().trim();
+      list = list.filter(item => 
+        item.title.toLowerCase().includes(s) ||
+        item.department.toLowerCase().includes(s) ||
+        item.benefits.toLowerCase().includes(s) ||
+        (item.description && item.description.toLowerCase().includes(s))
+      );
+    }
+
+    const limit = Math.min(parseInt(filters.limit || '50', 10), 100);
+    const offset = Math.max(parseInt(filters.offset || '0', 10), 0);
+    const paged = list.slice(offset, offset + limit);
+
+    return {
+      total: list.length,
+      limit,
+      offset,
+      schemes: paged
+    };
+  },
+
+  getSchemeById(id) {
+    return GOVERNMENT_SCHEMES.find(s => s.id === id);
+  },
+
+  createScheme(data) {
+    const newId = `SCHEME-2026-${Math.floor(100 + Math.random() * 900)}`;
+    const now = new Date().toISOString();
+    const sc = {
+      id: newId,
+      name: data.name || data.title,
+      title: data.title || data.name,
+      department: data.department || 'Central Ministry',
+      category: data.category || 'Welfare Schemes',
+      description: data.description || '',
+      purpose: data.purpose || data.description || '',
+      eligibility: data.eligibility || 'As per official guidelines',
+      benefits: data.benefits || '',
+      targetAudience: data.targetAudience || 'General Public',
+      requiredDocuments: Array.isArray(data.requiredDocuments) ? data.requiredDocuments : ['Aadhaar Card'],
+      applicationProcess: data.applicationProcess || 'Online via Portal',
+      applicationUrl: data.applicationUrl || 'https://www.myscheme.gov.in',
+      relatedServiceId: data.relatedServiceId || null,
+      source: data.source || 'myScheme Portal',
+      sourceType: data.sourceType || 'GOVERNMENT_PORTAL',
+      status: data.status || 'ACTIVE',
+      verified: true,
+      isMock: true,
+      lastVerifiedAt: now.slice(0, 10),
+      createdAt: now,
+      updatedAt: now
+    };
+    GOVERNMENT_SCHEMES.unshift(sc);
+    return sc;
+  },
+
+  updateScheme(id, updates) {
+    const sc = this.getSchemeById(id);
+    if (!sc) return null;
+    Object.assign(sc, updates, { updatedAt: new Date().toISOString() });
+    return sc;
+  },
+
+  deleteScheme(id) {
+    const idx = GOVERNMENT_SCHEMES.findIndex(s => s.id === id);
+    if (idx === -1) return false;
+    GOVERNMENT_SCHEMES[idx].status = 'INACTIVE';
+    GOVERNMENT_SCHEMES[idx].updatedAt = new Date().toISOString();
+    return true;
+  },
+
+  getAnnouncements(filters = {}) {
+    let list = [...ANNOUNCEMENTS];
+
+    if (filters.status && filters.status !== 'ALL') {
+      const st = filters.status.toUpperCase();
+      list = list.filter(a => a.status === st);
+    } else if (!filters.status) {
+      list = list.filter(a => a.status === 'PUBLISHED');
+    }
+
+    if (filters.category && filters.category !== 'ALL') {
+      const cat = filters.category.toLowerCase();
+      list = list.filter(a => a.category.toLowerCase().includes(cat));
+    }
+
+    if (filters.search) {
+      const s = filters.search.toLowerCase().trim();
+      list = list.filter(a => 
+        a.title.toLowerCase().includes(s) ||
+        a.department.toLowerCase().includes(s) ||
+        a.summary.toLowerCase().includes(s)
+      );
+    }
+
+    list.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
+
+    const limit = Math.min(parseInt(filters.limit || '50', 10), 100);
+    const offset = Math.max(parseInt(filters.offset || '0', 10), 0);
+    const paged = list.slice(offset, offset + limit);
+
+    return {
+      total: list.length,
+      limit,
+      offset,
+      announcements: paged
+    };
+  },
+
+  getAnnouncementById(id) {
+    return ANNOUNCEMENTS.find(a => a.id === id);
+  },
+
+  createAnnouncement(data) {
+    const newId = `NEWS-2026-${Math.floor(100 + Math.random() * 900)}`;
+    const now = new Date().toISOString();
+    const ann = {
+      id: newId,
+      title: data.title,
+      summary: data.summary || data.snippet || '',
+      snippet: data.summary || data.snippet || '',
+      content: data.content || data.summary || '',
+      department: data.department || 'Press Information Bureau',
+      category: data.category || 'Service Updates',
+      publishedAt: data.publishedAt || now.slice(0, 10),
+      expiryDate: data.expiryDate || null,
+      source: data.source || 'Press Information Bureau (PIB)',
+      sourceType: data.sourceType || 'GOVERNMENT_PORTAL',
+      sourceUrl: data.sourceUrl || 'https://pib.gov.in',
+      officialReference: data.officialReference || `PIB-PR-2026-${newId}`,
+      status: data.status || 'PUBLISHED',
+      verified: true,
+      isMock: true,
+      lastVerifiedAt: now.slice(0, 10),
+      createdAt: now,
+      updatedAt: now
+    };
+    ANNOUNCEMENTS.unshift(ann);
+    return ann;
+  },
+
+  updateAnnouncement(id, updates) {
+    const ann = this.getAnnouncementById(id);
+    if (!ann) return null;
+    Object.assign(ann, updates, { updatedAt: new Date().toISOString() });
+    return ann;
+  },
+
+  deleteAnnouncement(id) {
+    const idx = ANNOUNCEMENTS.findIndex(a => a.id === id);
+    if (idx === -1) return false;
+    ANNOUNCEMENTS[idx].status = 'ARCHIVED';
+    ANNOUNCEMENTS[idx].updatedAt = new Date().toISOString();
+    return true;
+  },
+
+  saveHubItem(userId, type, id) {
+    if (!savedHubItems.has(userId)) {
+      savedHubItems.set(userId, new Set());
+    }
+    const key = `${type}:${id}`;
+    savedHubItems.get(userId).add(key);
+    return true;
+  },
+
+  removeHubItem(userId, type, id) {
+    if (!savedHubItems.has(userId)) return false;
+    const key = `${type}:${id}`;
+    return savedHubItems.get(userId).delete(key);
+  },
+
+  getUserSavedHubItems(userId, type) {
+    const keys = savedHubItems.get(userId) || new Set();
+    const prefix = `${type}:`;
+    const ids = [];
+    for (const k of keys) {
+      if (k.startsWith(prefix)) {
+        ids.push(k.slice(prefix.length));
+      }
+    }
+    if (type === 'scholarship') {
+      return SCHOLARSHIPS.filter(s => ids.includes(s.id));
+    }
+    if (type === 'scheme') {
+      return GOVERNMENT_SCHEMES.filter(sc => ids.includes(sc.id));
+    }
+    return [];
   }
 };
 
@@ -1061,6 +1645,10 @@ db.vaultDocuments = vaultDocuments;
 db.vaultAuditLogs = vaultAuditLogs;
 db.employmentOpportunities = EMPLOYMENT_OPPORTUNITIES;
 db.savedOpportunities = savedOpportunities;
+db.scholarships = SCHOLARSHIPS;
+db.governmentSchemes = GOVERNMENT_SCHEMES;
+db.announcements = ANNOUNCEMENTS;
+db.savedHubItems = savedHubItems;
 
 // 6. Canonical Government Service Catalog (Phase 4 Foundation)
 export const SERVICES = [

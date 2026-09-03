@@ -85,6 +85,30 @@ import {
   deleteOpportunity,
   EmploymentError
 } from './employment/index.js';
+import {
+  listScholarships,
+  getScholarshipById,
+  saveScholarship,
+  removeSavedScholarship,
+  getSavedScholarships,
+  createScholarship,
+  updateScholarship,
+  deleteScholarship,
+  listSchemes,
+  getSchemeById,
+  saveScheme,
+  removeSavedScheme,
+  getSavedSchemes,
+  createScheme,
+  updateScheme,
+  deleteScheme,
+  listAnnouncements,
+  getAnnouncementById,
+  createAnnouncement,
+  updateAnnouncement,
+  deleteAnnouncement,
+  ContentHubError
+} from './content-hub/index.js';
 
 function readJsonBody(req, maxLimit = 10 * 1024 * 1024) {
   return new Promise((resolve, reject) => {
@@ -1357,6 +1381,242 @@ export async function handleApiRequest(req, res) {
       requireRole(user, ['ADMIN']);
       const oppId = empIdMatch[1];
       const result = deleteOpportunity(user, oppId);
+      return sendJson(res, 200, result);
+    }
+
+    // ==========================================
+    // PHASE 17 — SCHOLARSHIP, SCHEME & NEWS HUB ENDPOINTS
+    // ==========================================
+
+    // --- A. SCHOLARSHIPS ---
+
+    // 65. GET /api/v1/content/scholarships/saved
+    if (method === 'GET' && pathname === '/api/v1/content/scholarships/saved') {
+      const { user } = authenticateToken(req.headers.authorization);
+      const result = getSavedScholarships(user);
+      return sendJson(res, 200, result);
+    }
+
+    // 66. POST /api/v1/content/scholarships/saved/:id
+    const schSaveMatch = pathname.match(/^\/api\/v1\/content\/scholarships\/saved\/([^/]+)$/);
+    if (method === 'POST' && schSaveMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      const id = schSaveMatch[1];
+      const result = saveScholarship(user, id);
+      return sendJson(res, 200, result);
+    }
+
+    // 67. DELETE /api/v1/content/scholarships/saved/:id
+    if (method === 'DELETE' && schSaveMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      const id = schSaveMatch[1];
+      const result = removeSavedScholarship(user, id);
+      return sendJson(res, 200, result);
+    }
+
+    // 68. GET /api/v1/content/scholarships
+    if (method === 'GET' && pathname === '/api/v1/content/scholarships') {
+      let user = null;
+      if (req.headers.authorization) {
+        try {
+          const auth = authenticateToken(req.headers.authorization);
+          user = auth.user;
+        } catch (e) {}
+      }
+      const filters = {
+        search: url.searchParams.get('search') || '',
+        category: url.searchParams.get('category') || '',
+        status: url.searchParams.get('status') || '',
+        closingSoon: url.searchParams.get('closingSoon') === 'true',
+        sort: url.searchParams.get('sort') || 'newest',
+        limit: url.searchParams.get('limit') || '50',
+        offset: url.searchParams.get('offset') || '0'
+      };
+      const result = listScholarships(filters, user);
+      return sendJson(res, 200, result);
+    }
+
+    // 69. POST /api/v1/content/scholarships (Admin: Create)
+    if (method === 'POST' && pathname === '/api/v1/content/scholarships') {
+      const { user } = authenticateToken(req.headers.authorization);
+      requireRole(user, ['ADMIN']);
+      const body = await readJsonBody(req);
+      const result = createScholarship(user, body);
+      return sendJson(res, 201, result);
+    }
+
+    // 70. GET /api/v1/content/scholarships/:id
+    const schIdMatch = pathname.match(/^\/api\/v1\/content\/scholarships\/([^/]+)$/);
+    if (method === 'GET' && schIdMatch && schIdMatch[1] !== 'saved') {
+      const id = schIdMatch[1];
+      let user = null;
+      if (req.headers.authorization) {
+        try {
+          const auth = authenticateToken(req.headers.authorization);
+          user = auth.user;
+        } catch (e) {}
+      }
+      const result = getScholarshipById(id, user);
+      return sendJson(res, 200, result);
+    }
+
+    // 71. PUT /api/v1/content/scholarships/:id (Admin: Update)
+    if (method === 'PUT' && schIdMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      requireRole(user, ['ADMIN']);
+      const id = schIdMatch[1];
+      const body = await readJsonBody(req);
+      const result = updateScholarship(user, id, body);
+      return sendJson(res, 200, result);
+    }
+
+    // 72. DELETE /api/v1/content/scholarships/:id (Admin: Deactivate)
+    if (method === 'DELETE' && schIdMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      requireRole(user, ['ADMIN']);
+      const id = schIdMatch[1];
+      const result = deleteScholarship(user, id);
+      return sendJson(res, 200, result);
+    }
+
+    // --- B. GOVERNMENT SCHEMES ---
+
+    // 73. GET /api/v1/content/schemes/saved
+    if (method === 'GET' && pathname === '/api/v1/content/schemes/saved') {
+      const { user } = authenticateToken(req.headers.authorization);
+      const result = getSavedSchemes(user);
+      return sendJson(res, 200, result);
+    }
+
+    // 74. POST /api/v1/content/schemes/saved/:id
+    const scSaveMatch = pathname.match(/^\/api\/v1\/content\/schemes\/saved\/([^/]+)$/);
+    if (method === 'POST' && scSaveMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      const id = scSaveMatch[1];
+      const result = saveScheme(user, id);
+      return sendJson(res, 200, result);
+    }
+
+    // 75. DELETE /api/v1/content/schemes/saved/:id
+    if (method === 'DELETE' && scSaveMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      const id = scSaveMatch[1];
+      const result = removeSavedScheme(user, id);
+      return sendJson(res, 200, result);
+    }
+
+    // 76. GET /api/v1/content/schemes
+    if (method === 'GET' && pathname === '/api/v1/content/schemes') {
+      let user = null;
+      if (req.headers.authorization) {
+        try {
+          const auth = authenticateToken(req.headers.authorization);
+          user = auth.user;
+        } catch (e) {}
+      }
+      const filters = {
+        search: url.searchParams.get('search') || '',
+        category: url.searchParams.get('category') || '',
+        department: url.searchParams.get('department') || '',
+        status: url.searchParams.get('status') || '',
+        limit: url.searchParams.get('limit') || '50',
+        offset: url.searchParams.get('offset') || '0'
+      };
+      const result = listSchemes(filters, user);
+      return sendJson(res, 200, result);
+    }
+
+    // 77. POST /api/v1/content/schemes (Admin: Create)
+    if (method === 'POST' && pathname === '/api/v1/content/schemes') {
+      const { user } = authenticateToken(req.headers.authorization);
+      requireRole(user, ['ADMIN']);
+      const body = await readJsonBody(req);
+      const result = createScheme(user, body);
+      return sendJson(res, 201, result);
+    }
+
+    // 78. GET /api/v1/content/schemes/:id
+    const scIdMatch = pathname.match(/^\/api\/v1\/content\/schemes\/([^/]+)$/);
+    if (method === 'GET' && scIdMatch && scIdMatch[1] !== 'saved') {
+      const id = scIdMatch[1];
+      let user = null;
+      if (req.headers.authorization) {
+        try {
+          const auth = authenticateToken(req.headers.authorization);
+          user = auth.user;
+        } catch (e) {}
+      }
+      const result = getSchemeById(id, user);
+      return sendJson(res, 200, result);
+    }
+
+    // 79. PUT /api/v1/content/schemes/:id (Admin: Update)
+    if (method === 'PUT' && scIdMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      requireRole(user, ['ADMIN']);
+      const id = scIdMatch[1];
+      const body = await readJsonBody(req);
+      const result = updateScheme(user, id, body);
+      return sendJson(res, 200, result);
+    }
+
+    // 80. DELETE /api/v1/content/schemes/:id (Admin: Deactivate)
+    if (method === 'DELETE' && scIdMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      requireRole(user, ['ADMIN']);
+      const id = scIdMatch[1];
+      const result = deleteScheme(user, id);
+      return sendJson(res, 200, result);
+    }
+
+    // --- C. ANNOUNCEMENTS & NEWS ---
+
+    // 81. GET /api/v1/content/announcements
+    if (method === 'GET' && pathname === '/api/v1/content/announcements') {
+      const filters = {
+        search: url.searchParams.get('search') || '',
+        category: url.searchParams.get('category') || '',
+        status: url.searchParams.get('status') || '',
+        limit: url.searchParams.get('limit') || '50',
+        offset: url.searchParams.get('offset') || '0'
+      };
+      const result = listAnnouncements(filters);
+      return sendJson(res, 200, result);
+    }
+
+    // 82. POST /api/v1/content/announcements (Admin: Create)
+    if (method === 'POST' && pathname === '/api/v1/content/announcements') {
+      const { user } = authenticateToken(req.headers.authorization);
+      requireRole(user, ['ADMIN']);
+      const body = await readJsonBody(req);
+      const result = createAnnouncement(user, body);
+      return sendJson(res, 201, result);
+    }
+
+    // 83. GET /api/v1/content/announcements/:id
+    const annIdMatch = pathname.match(/^\/api\/v1\/content\/announcements\/([^/]+)$/);
+    if (method === 'GET' && annIdMatch) {
+      const id = annIdMatch[1];
+      const result = getAnnouncementById(id);
+      return sendJson(res, 200, result);
+    }
+
+    // 84. PUT /api/v1/content/announcements/:id (Admin: Update)
+    if (method === 'PUT' && annIdMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      requireRole(user, ['ADMIN']);
+      const id = annIdMatch[1];
+      const body = await readJsonBody(req);
+      const result = updateAnnouncement(user, id, body);
+      return sendJson(res, 200, result);
+    }
+
+    // 85. DELETE /api/v1/content/announcements/:id (Admin: Archive)
+    if (method === 'DELETE' && annIdMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      requireRole(user, ['ADMIN']);
+      const id = annIdMatch[1];
+      const result = deleteAnnouncement(user, id);
       return sendJson(res, 200, result);
     }
 

@@ -126,6 +126,39 @@ export class KnowledgeBase {
       }
     }
 
+    // 6. Check Scholarships
+    const isScholarshipQuery = ['scholarship', 'scholarships', 'nmmss', 'pragati', 'merit scholarship'].some(w => queryTokens.has(w) || q.includes(w));
+    if (isScholarshipQuery && db.getScholarships) {
+      const schRes = db.getScholarships({ search: q, limit: 1 });
+      const sch = schRes.scholarships.length > 0 ? schRes.scholarships[0] : db.getScholarships({ limit: 1 }).scholarships[0];
+      if (sch) {
+        results.matchedScholarship = sch;
+        results.sources.push(`National Scholarship Portal (NSP): ${sch.title}`);
+      }
+    }
+
+    // 7. Check Government Schemes
+    const isSchemeQuery = ['scheme', 'schemes', 'svanidhi', 'pmfby', 'fasal bima', 'welfare scheme'].some(w => queryTokens.has(w) || q.includes(w));
+    if (isSchemeQuery && db.getSchemes) {
+      const scRes = db.getSchemes({ search: q, limit: 1 });
+      const sc = scRes.schemes.length > 0 ? scRes.schemes[0] : db.getSchemes({ limit: 1 }).schemes[0];
+      if (sc) {
+        results.matchedScheme = sc;
+        results.sources.push(`myScheme Portal: ${sc.title}`);
+      }
+    }
+
+    // 8. Check Announcements / News
+    const isNewsQuery = ['news', 'announcement', 'announcements', 'circular', 'press release'].some(w => queryTokens.has(w) || q.includes(w));
+    if (isNewsQuery && db.getAnnouncements) {
+      const newsRes = db.getAnnouncements({ search: q, limit: 1 });
+      const news = newsRes.announcements.length > 0 ? newsRes.announcements[0] : db.getAnnouncements({ limit: 1 }).announcements[0];
+      if (news) {
+        results.matchedAnnouncement = news;
+        results.sources.push(`Press Information Bureau (PIB): ${news.title}`);
+      }
+    }
+
     return results;
   }
 
@@ -258,7 +291,93 @@ export class KnowledgeBase {
       };
     }
 
-    // Case 7: Fallback for uncataloged / unverified topics
+    // Case 7: Matched Scholarship
+    if (knowledge.matchedScholarship) {
+      const sch = knowledge.matchedScholarship;
+      responseText = `**${sch.title}**\n\n` +
+        `• **Ministry / Provider:** ${sch.provider}\n` +
+        `• **Benefit Amount:** ${sch.benefitAmount || sch.benefit}\n` +
+        `• **Eligibility:** ${sch.eligibility}\n` +
+        `• **Application Deadline:** ${sch.deadline}\n\n` +
+        `**Required Documents:**\n` +
+        (sch.requiredDocuments || []).map(d => `  - ${d}`).join('\n') +
+        `\n\n*Official Source: ${sch.source} (${sch.applicationUrl})*`;
+
+      if (sch.relatedServiceId) {
+        actions.push({
+          type: 'VIEW_SERVICE',
+          serviceId: sch.relatedServiceId,
+          label: 'Apply through Unified Portal'
+        });
+      }
+      actions.push({
+        type: 'NAVIGATE',
+        target: 'scholarships',
+        label: 'View Scholarships Hub'
+      });
+
+      return {
+        text: responseText,
+        sources: knowledge.sources,
+        actions
+      };
+    }
+
+    // Case 8: Matched Government Scheme
+    if (knowledge.matchedScheme) {
+      const sc = knowledge.matchedScheme;
+      responseText = `**${sc.title}**\n\n` +
+        `• **Department:** ${sc.department}\n` +
+        `• **Category:** ${sc.category}\n` +
+        `• **Benefits:** ${sc.benefits}\n` +
+        `• **Eligibility:** ${sc.eligibility}\n` +
+        `• **Application Process:** ${sc.applicationProcess}\n\n` +
+        `*Official Portal Source: ${sc.source} (${sc.applicationUrl})*`;
+
+      if (sc.relatedServiceId) {
+        actions.push({
+          type: 'VIEW_SERVICE',
+          serviceId: sc.relatedServiceId,
+          label: 'Apply via Service Catalog'
+        });
+      }
+      actions.push({
+        type: 'NAVIGATE',
+        target: 'schemes',
+        label: 'View Schemes Directory'
+      });
+
+      return {
+        text: responseText,
+        sources: knowledge.sources,
+        actions
+      };
+    }
+
+    // Case 9: Matched News / Announcement
+    if (knowledge.matchedAnnouncement) {
+      const ann = knowledge.matchedAnnouncement;
+      responseText = `**${ann.title}**\n\n` +
+        `• **Department:** ${ann.department}\n` +
+        `• **Published Date:** ${ann.publishedAt}\n` +
+        `• **Category:** ${ann.category}\n\n` +
+        `${ann.summary}\n\n` +
+        `*Official Reference: ${ann.officialReference || ann.source}*`;
+
+      actions.push({
+        type: 'NAVIGATE',
+        target: 'news',
+        label: 'Read Official Announcements'
+      });
+
+      return {
+        text: responseText,
+        sources: knowledge.sources,
+        actions
+      };
+    }
+
+    // Case 10: Fallback for uncataloged / unverified topics
     return {
       text: "I don't have verified information for that specific query in the official portal knowledge base.\n\nPlease explore our **Government Services Catalog** for cataloged services, or check the official national portals at **myScheme.gov.in** and **scholarships.gov.in**.",
       sources: ['National Citizen Services Directory'],
