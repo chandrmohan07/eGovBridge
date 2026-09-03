@@ -227,6 +227,75 @@ export const sessions = new Map();
 // 6. Smart Orchestration Instances Store (Phase 6 Foundation)
 export const orchestrations = [];
 
+// 7. Digital Document Vault Store (Phase 13 Foundation)
+export const vaultDocuments = [
+  {
+    id: 'DOC-2026-AADH-01',
+    citizenId: 'USR-CIT-001',
+    documentType: 'IDENTITY_PROOF',
+    documentName: 'Aadhaar e-KYC Card',
+    fileName: 'aadhaar_rahul_verma.pdf',
+    fileType: 'application/pdf',
+    fileSize: 148200,
+    storageReference: 'vault/USR-CIT-001/doc_seed_aadhaar.pdf',
+    documentStatus: 'VERIFIED',
+    uploadedAt: '2026-08-20T10:00:00.000Z',
+    updatedAt: '2026-08-20T10:00:00.000Z',
+    expiryDate: null,
+    metadata: {
+      issuingAuthority: 'Unique Identification Authority of India (UIDAI)',
+      verificationMode: 'DigiLocker Linked e-KYC'
+    },
+    applications: ['APP-2026-EDU-8812'],
+    version: 1
+  },
+  {
+    id: 'DOC-2026-INCM-02',
+    citizenId: 'USR-CIT-001',
+    documentType: 'INCOME_CERTIFICATE',
+    documentName: 'Annual Family Income Certificate FY25-26',
+    fileName: 'income_cert_fy26.pdf',
+    fileType: 'application/pdf',
+    fileSize: 204800,
+    storageReference: 'vault/USR-CIT-001/doc_seed_income.pdf',
+    documentStatus: 'VERIFIED',
+    uploadedAt: '2026-08-22T14:30:00.000Z',
+    updatedAt: '2026-08-22T14:30:00.000Z',
+    expiryDate: '2027-03-31',
+    metadata: {
+      certificateNumber: 'REV/PUN/2026/8841',
+      issuingAuthority: 'State Revenue Department, Tahsildar Haveli Pune',
+      certifiedAnnualIncome: '₹1,80,000'
+    },
+    applications: ['APP-2026-EDU-8812'],
+    version: 1
+  },
+  {
+    id: 'DOC-2026-MRKS-03',
+    citizenId: 'USR-CIT-001',
+    documentType: 'EDUCATION_CERTIFICATE',
+    documentName: 'Higher Secondary School Certificate (Class 12)',
+    fileName: 'hsc_marksheet_class12.pdf',
+    fileType: 'application/pdf',
+    fileSize: 312400,
+    storageReference: 'vault/USR-CIT-001/doc_seed_marksheet.pdf',
+    documentStatus: 'VERIFIED',
+    uploadedAt: '2026-08-25T09:15:00.000Z',
+    updatedAt: '2026-08-25T09:15:00.000Z',
+    expiryDate: null,
+    metadata: {
+      boardName: 'Maharashtra State Board of Secondary and Higher Secondary Education',
+      percentage: '92.5%',
+      passingYear: '2025'
+    },
+    applications: ['APP-2026-EDU-8812'],
+    version: 1
+  }
+];
+
+// 8. Vault Audit Trail Store
+export const vaultAuditLogs = [];
+
 // Helper database functions
 export const db = {
   findUserByEmail(email) {
@@ -517,6 +586,85 @@ export const db = {
   getServiceCategories() {
     const cats = new Set(SERVICES.map(s => s.category));
     return Array.from(cats);
+  },
+
+  // --- Digital Document Vault Methods (Phase 13) ---
+  getVaultDocuments(citizenId, filters = {}) {
+    let docs = vaultDocuments.filter(d => d.citizenId === citizenId && d.documentStatus !== 'DELETED');
+
+    if (filters.type && filters.type !== 'ALL') {
+      docs = docs.filter(d => d.documentType === filters.type);
+    }
+    if (filters.status && filters.status !== 'ALL') {
+      docs = docs.filter(d => d.documentStatus === filters.status);
+    }
+    if (filters.search) {
+      const q = String(filters.search).toLowerCase().trim();
+      docs = docs.filter(d => 
+        (d.documentName && d.documentName.toLowerCase().includes(q)) ||
+        (d.fileName && d.fileName.toLowerCase().includes(q)) ||
+        (d.id && d.id.toLowerCase().includes(q))
+      );
+    }
+
+    return docs;
+  },
+
+  getVaultDocumentById(id) {
+    if (!id) return null;
+    return vaultDocuments.find(d => d.id === id) || null;
+  },
+
+  createVaultDocument(docData) {
+    const newDoc = {
+      ...docData,
+      version: docData.version || 1,
+      applications: Array.isArray(docData.applications) ? [...docData.applications] : [],
+      documentStatus: docData.documentStatus || 'ACTIVE',
+      uploadedAt: docData.uploadedAt || new Date().toISOString(),
+      updatedAt: docData.updatedAt || new Date().toISOString()
+    };
+    vaultDocuments.push(newDoc);
+    return newDoc;
+  },
+
+  updateVaultDocument(id, updates = {}) {
+    const doc = this.getVaultDocumentById(id);
+    if (!doc) return null;
+    Object.assign(doc, updates, { updatedAt: new Date().toISOString() });
+    return doc;
+  },
+
+  deleteVaultDocument(id) {
+    const doc = this.getVaultDocumentById(id);
+    if (!doc) return false;
+    doc.documentStatus = 'DELETED';
+    doc.updatedAt = new Date().toISOString();
+    return true;
+  },
+
+  recordVaultAudit(entry) {
+    const log = {
+      id: `VAUD-${Date.now()}-${crypto.randomBytes(2).toString('hex').toUpperCase()}`,
+      timestamp: new Date().toISOString(),
+      ...entry
+    };
+    vaultAuditLogs.unshift(log);
+    return log;
+  },
+
+  getVaultAuditLogs(filter = {}) {
+    let logs = [...vaultAuditLogs];
+    if (filter.documentId) {
+      logs = logs.filter(l => l.documentId === filter.documentId);
+    }
+    if (filter.citizenId) {
+      logs = logs.filter(l => l.citizenId === filter.citizenId);
+    }
+    if (filter.limit) {
+      logs = logs.slice(0, filter.limit);
+    }
+    return logs;
   }
 };
 

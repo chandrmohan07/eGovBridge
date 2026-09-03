@@ -1,0 +1,76 @@
+{
+  "documentTypes": [
+    {
+      "code": "IDENTITY_PROOF",
+      "name": "Identity Proof",
+      "description": "Government-issued identity documents such as Aadhaar, Passport, Voter ID, PAN card, or Driving License.",
+      "acceptedMimeTypes": ["application/pdf", "image/jpeg", "image/png"],
+      "maxSizeBytes": 5242880,
+      "requiresExpiry": false
+    },
+    {
+      "code": "ADDRESS_PROOF",
+      "name": "Address Proof",
+      "description": "Legal proof of residential domicile such as Electricity Bill, Water Bill, Rent Agreement, or Ration Card.",
+      "acceptedMimeTypes": ["application/pdf", "image/jpeg", "image/png"],
+      "maxSizeBytes": 5242880,
+      "requiresExpiry": false
+    },
+    {
+      "code": "INCOME_CERTIFICATE",
+      "name": "Income Certificate",
+      "description": "Revenue authority certified annual family income certificate, salary certificate, or income affidavit.",
+      "acceptedMimeTypes": ["application/pdf", "image/jpeg", "image/png"],
+      "maxSizeBytes": 5242880,
+      "requiresExpiry": true
+    },
+    {
+      "code": "CASTE_CERTIFICATE",
+      "name": "Caste / Community Certificate",
+      "description": "Statutory caste or community certificate (SC / ST / OBC / EWS) issued by competent revenue authority.",
+      "acceptedMimeTypes": ["application/pdf", "image/jpeg", "image/png"],
+      "maxSizeBytes": 5242880,
+      "requiresExpiry": false
+    },
+    {
+      "code": "EDUCATION_CERTIFICATE",
+      "name": "Education Certificate / Marksheet",
+      "description": "Board examination marksheets, university degree transcripts, bonafide student certificates, or fee receipts.",
+      "acceptedMimeTypes": ["application/pdf", "image/jpeg", "image/png"],
+      "maxSizeBytes": 5242880,
+      "requiresExpiry": false
+    },
+    {
+      "code": "LAND_RECORD",
+      "name": "Land Record / RoR / Khasra",
+      "description": "Land title deeds, Record of Rights (RoR), 7/12 extract, Khasra/Khatoni records, or land tax receipts.",
+      "acceptedMimeTypes": ["application/pdf", "image/jpeg", "image/png"],
+      "maxSizeBytes": 5242880,
+      "requiresExpiry": false
+    },
+    {
+      "code": "EMPLOYMENT_DOCUMENT",
+      "name": "Employment Document",
+      "description": "Offer letters, experience certificates, pension slips, or employment exchange registration certificates.",
+      "acceptedMimeTypes": ["application/pdf", "image/jpeg", "image/png"],
+      "maxSizeBytes": 5242880,
+      "requiresExpiry": false
+    },
+    {
+      "code": "SCHOLARSHIP_DOCUMENT",
+      "name": "Scholarship Document",
+      "description": "National Scholarship Portal sanction order, bonafide college letter, or bank passbook mandate.",
+      "acceptedMimeTypes": ["application/pdf", "image/jpeg", "image/png"],
+      "maxSizeBytes": 5242880,
+      "requiresExpiry": false
+    },
+    {
+      "code": "OTHER",
+      "name": "Other Document / Affidavit",
+      "description": "Notarized affidavits, medical certificates, court orders, or other auxiliary government proofs.",
+      "acceptedMimeTypes": ["application/pdf", "image/jpeg", "image/png"],
+      "maxSizeBytes": 5242880,
+      "requiresExpiry": false
+    }
+  ]
+}

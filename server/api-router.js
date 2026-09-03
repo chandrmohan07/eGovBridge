@@ -41,13 +41,24 @@ import {
   getCitizenApplications,
   TrackingError
 } from './tracking/index.js';
+import {
+  getDocumentTypes,
+  uploadDocument,
+  listCitizenDocuments,
+  getDocumentMetadata,
+  downloadDocument,
+  deleteDocument,
+  associateDocumentWithApplication,
+  getVaultAuditLogs,
+  VaultError
+} from './vault/index.js';
 
-function readJsonBody(req) {
+function readJsonBody(req, maxLimit = 10 * 1024 * 1024) {
   return new Promise((resolve, reject) => {
     let body = '';
     req.on('data', chunk => {
       body += chunk;
-      if (body.length > 1e6) { // 1MB limit
+      if (body.length > maxLimit) { // 10MB limit for base64 documents
         req.destroy();
         reject(new AuthError('Payload too large', 413));
       }
@@ -902,6 +913,121 @@ export async function handleApiRequest(req, res) {
       }
       const logs = dataExchangeService.getAuditLogs(filter);
 
+      return sendJson(res, 200, {
+        success: true,
+        count: logs.length,
+        logs
+      });
+    }
+
+    // ==========================================
+    // PHASE 13 — DIGITAL DOCUMENT VAULT ENDPOINTS
+    // ==========================================
+
+    // 34. GET /api/v1/vault/types (Retrieve Configured Document Types)
+    if (method === 'GET' && pathname === '/api/v1/vault/types') {
+      const types = getDocumentTypes();
+      return sendJson(res, 200, {
+        success: true,
+        count: types.length,
+        documentTypes: types
+      });
+    }
+
+    // 35. POST /api/v1/vault/documents (Upload New Vault Document)
+    if (method === 'POST' && pathname === '/api/v1/vault/documents') {
+      const { user } = authenticateToken(req.headers.authorization);
+      const body = await readJsonBody(req);
+      const document = await uploadDocument(user, body);
+      return sendJson(res, 201, {
+        success: true,
+        message: 'Document uploaded and secured in Digital Vault',
+        document
+      });
+    }
+
+    // 36. GET /api/v1/vault/documents (List Citizen's Vault Documents)
+    if (method === 'GET' && pathname === '/api/v1/vault/documents') {
+      const { user } = authenticateToken(req.headers.authorization);
+      const filters = {
+        type: url.searchParams.get('type') || 'ALL',
+        status: url.searchParams.get('status') || 'ALL',
+        search: url.searchParams.get('search') || ''
+      };
+      const documents = listCitizenDocuments(user, filters);
+      return sendJson(res, 200, {
+        success: true,
+        count: documents.length,
+        documents
+      });
+    }
+
+    // 37. GET /api/v1/vault/documents/:id (Get Document Metadata)
+    const vaultDocMatch = pathname.match(/^\/api\/v1\/vault\/documents\/([^/]+)$/);
+    if (method === 'GET' && vaultDocMatch) {
+      const docId = vaultDocMatch[1];
+      const { user } = authenticateToken(req.headers.authorization);
+      const document = getDocumentMetadata(user, docId);
+      return sendJson(res, 200, {
+        success: true,
+        document
+      });
+    }
+
+    // 38. GET /api/v1/vault/documents/:id/download (Secure File Download)
+    const vaultDownloadMatch = pathname.match(/^\/api\/v1\/vault\/documents\/([^/]+)\/download$/);
+    if (method === 'GET' && vaultDownloadMatch) {
+      const docId = vaultDownloadMatch[1];
+      const { user } = authenticateToken(req.headers.authorization);
+      const file = await downloadDocument(user, docId);
+
+      const acceptHeader = req.headers['accept'] || '';
+      if (acceptHeader.includes('application/json')) {
+        return sendJson(res, 200, {
+          success: true,
+          fileName: file.fileName,
+          mimeType: file.mimeType,
+          size: file.size,
+          dataBase64: file.buffer.toString('base64')
+        });
+      }
+
+      res.writeHead(200, {
+        'Content-Type': file.mimeType,
+        'Content-Disposition': `attachment; filename="${file.fileName}"`,
+        'Content-Length': file.buffer.length,
+        'X-Request-Id': req.requestId || ''
+      });
+      return res.end(file.buffer);
+    }
+
+    // 39. DELETE /api/v1/vault/documents/:id (Delete Document)
+    if (method === 'DELETE' && vaultDocMatch) {
+      const docId = vaultDocMatch[1];
+      const { user } = authenticateToken(req.headers.authorization);
+      const result = await deleteDocument(user, docId);
+      return sendJson(res, 200, result);
+    }
+
+    // 40. POST /api/v1/vault/documents/:id/associate (Associate with Application)
+    const vaultAssocMatch = pathname.match(/^\/api\/v1\/vault\/documents\/([^/]+)\/associate$/);
+    if (method === 'POST' && vaultAssocMatch) {
+      const docId = vaultAssocMatch[1];
+      const { user } = authenticateToken(req.headers.authorization);
+      const body = await readJsonBody(req);
+      if (!body.applicationId) {
+        return sendJson(res, 400, { success: false, error: 'applicationId is required' });
+      }
+      const result = associateDocumentWithApplication(user, docId, body.applicationId);
+      return sendJson(res, 200, result);
+    }
+
+    // 41. GET /api/v1/vault/audit (Retrieve Vault Audit Logs)
+    if (method === 'GET' && pathname === '/api/v1/vault/audit') {
+      const { user } = authenticateToken(req.headers.authorization);
+      const documentId = url.searchParams.get('documentId') || null;
+      const limit = parseInt(url.searchParams.get('limit') || '50', 10);
+      const logs = getVaultAuditLogs(user, { documentId, limit });
       return sendJson(res, 200, {
         success: true,
         count: logs.length,
