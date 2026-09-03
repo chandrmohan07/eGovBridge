@@ -109,6 +109,21 @@ import {
   deleteAnnouncement,
   ContentHubError
 } from './content-hub/index.js';
+import {
+  getPersonalizationPreferences,
+  updatePersonalizationPreferences,
+  resetPersonalizationPreferences,
+  dismissRecommendation,
+  restoreRecommendation,
+  getRecommendedServices,
+  getRecommendedScholarships,
+  getRecommendedSchemes,
+  getRecommendedEmployment,
+  getRecommendedAnnouncements,
+  getPersonalizedDashboard,
+  getPersonalizationMetrics,
+  PersonalizationError
+} from './personalization/index.js';
 
 function readJsonBody(req, maxLimit = 10 * 1024 * 1024) {
   return new Promise((resolve, reject) => {
@@ -1617,6 +1632,104 @@ export async function handleApiRequest(req, res) {
       requireRole(user, ['ADMIN']);
       const id = annIdMatch[1];
       const result = deleteAnnouncement(user, id);
+      return sendJson(res, 200, result);
+    }
+
+    // ==========================================
+    // PHASE 18 — PERSONALIZED INFORMATION ENDPOINTS
+    // ==========================================
+
+    // 86. GET /api/v1/personalization/preferences
+    if (method === 'GET' && pathname === '/api/v1/personalization/preferences') {
+      const { user } = authenticateToken(req.headers.authorization);
+      const result = getPersonalizationPreferences(user);
+      return sendJson(res, 200, result);
+    }
+
+    // 87. PUT /api/v1/personalization/preferences
+    if (method === 'PUT' && pathname === '/api/v1/personalization/preferences') {
+      const { user } = authenticateToken(req.headers.authorization);
+      const body = await readJsonBody(req);
+      const result = updatePersonalizationPreferences(user, body);
+      return sendJson(res, 200, result);
+    }
+
+    // 88. DELETE /api/v1/personalization/preferences (Reset to defaults)
+    if (method === 'DELETE' && pathname === '/api/v1/personalization/preferences') {
+      const { user } = authenticateToken(req.headers.authorization);
+      const result = resetPersonalizationPreferences(user);
+      return sendJson(res, 200, result);
+    }
+
+    // 89. GET /api/v1/personalization/dashboard (Combined personalized overview)
+    if (method === 'GET' && pathname === '/api/v1/personalization/dashboard') {
+      const { user } = authenticateToken(req.headers.authorization);
+      const result = getPersonalizedDashboard(user);
+      return sendJson(res, 200, result);
+    }
+
+    // 90. GET /api/v1/personalization/services
+    if (method === 'GET' && pathname === '/api/v1/personalization/services') {
+      const { user } = authenticateToken(req.headers.authorization);
+      const limit = url.searchParams.get('limit') || '10';
+      const result = getRecommendedServices(user, { limit });
+      return sendJson(res, 200, result);
+    }
+
+    // 91. GET /api/v1/personalization/scholarships
+    if (method === 'GET' && pathname === '/api/v1/personalization/scholarships') {
+      const { user } = authenticateToken(req.headers.authorization);
+      const limit = url.searchParams.get('limit') || '10';
+      const result = getRecommendedScholarships(user, { limit });
+      return sendJson(res, 200, result);
+    }
+
+    // 92. GET /api/v1/personalization/schemes
+    if (method === 'GET' && pathname === '/api/v1/personalization/schemes') {
+      const { user } = authenticateToken(req.headers.authorization);
+      const limit = url.searchParams.get('limit') || '10';
+      const result = getRecommendedSchemes(user, { limit });
+      return sendJson(res, 200, result);
+    }
+
+    // 93. GET /api/v1/personalization/employment
+    if (method === 'GET' && pathname === '/api/v1/personalization/employment') {
+      const { user } = authenticateToken(req.headers.authorization);
+      const limit = url.searchParams.get('limit') || '10';
+      const result = getRecommendedEmployment(user, { limit });
+      return sendJson(res, 200, result);
+    }
+
+    // 94. GET /api/v1/personalization/announcements
+    if (method === 'GET' && pathname === '/api/v1/personalization/announcements') {
+      const { user } = authenticateToken(req.headers.authorization);
+      const limit = url.searchParams.get('limit') || '10';
+      const result = getRecommendedAnnouncements(user, { limit });
+      return sendJson(res, 200, result);
+    }
+
+    // 95. POST /api/v1/personalization/dismiss/:id
+    const dismissMatch = pathname.match(/^\/api\/v1\/personalization\/dismiss\/([^/]+)$/);
+    if (method === 'POST' && dismissMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      const recId = dismissMatch[1];
+      const result = dismissRecommendation(user, recId);
+      return sendJson(res, 200, result);
+    }
+
+    // 96. DELETE /api/v1/personalization/dismiss/:id
+    if (method === 'DELETE' && dismissMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      const recId = dismissMatch[1];
+      const result = restoreRecommendation(user, recId);
+      return sendJson(res, 200, result);
+    }
+
+    // 97. GET /api/v1/personalization/metrics (Admin only)
+    if (method === 'GET' && pathname === '/api/v1/personalization/metrics') {
+      const { user } = authenticateToken(req.headers.authorization);
+      requireRole(user, ['ADMIN']);
+      const result = getPersonalizationMetrics(user);
       return sendJson(res, 200, result);
     }
 

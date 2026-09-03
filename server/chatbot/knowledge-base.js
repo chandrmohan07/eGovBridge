@@ -5,6 +5,7 @@
  */
 
 import { db, SERVICES } from '../db.js';
+import { getPersonalizedDashboard } from '../personalization/index.js';
 
 const STATUS_EXPLANATIONS = {
   DRAFT: 'Your application is saved as an in-progress draft. You can continue editing and submitting documents anytime before final submission.',
@@ -70,6 +71,16 @@ export class KnowledgeBase {
       // Return the most recent application
       results.matchedApplication = citizenApplications[0];
       results.sources.push(`Recent Application: ${citizenApplications[0].id}`);
+    }
+
+    // 1.5. Check for Personalized Recommendation queries
+    const isPersonalizedQuery = ['relevant to me', 'recommend', 'recommended', 'matches my', 'matching my', 'for me', 'my preferences', 'personalized'].some(phrase => q.includes(phrase));
+    if (isPersonalizedQuery && user && user.id) {
+      try {
+        const pDash = getPersonalizedDashboard(user);
+        results.matchedPersonalization = pDash;
+        results.sources.push('Citizen Personalized Recommendations Engine');
+      } catch (e) {}
     }
 
     // 2. Check Service Catalog
@@ -377,7 +388,53 @@ export class KnowledgeBase {
       };
     }
 
-    // Case 10: Fallback for uncataloged / unverified topics
+    // Case 10: Matched Personalization
+    if (knowledge.matchedPersonalization) {
+      const p = knowledge.matchedPersonalization;
+      const prefs = p.preferences;
+      const recs = p.recommendations;
+
+      let replyText = `**Personalized Portal Recommendations for ${p.citizen.name}**\n\n` +
+        `• **Profile Persona:** ${prefs.persona}\n` +
+        `• **Location Preference:** ${prefs.preferredLocation}\n` +
+        `• **Qualification:** ${prefs.qualification}\n\n`;
+
+      if (p.actionCards && p.actionCards.length > 0) {
+        replyText += `**⚠️ Immediate Action Required:**\n` +
+          p.actionCards.map(a => `• **${a.title}:** ${a.message}`).join('\n') + `\n\n`;
+      }
+
+      if (recs.scholarships && recs.scholarships.length > 0) {
+        replyText += `**Recommended Scholarships:**\n` +
+          recs.scholarships.map(s => `• **${s.title}** (${s.benefitAmount || 'Financial Support'}) — *${s.recommendationReasons[0] || 'Relevant to profile'}*`).join('\n') + `\n\n`;
+      }
+
+      if (recs.schemes && recs.schemes.length > 0) {
+        replyText += `**Recommended Schemes:**\n` +
+          recs.schemes.map(sc => `• **${sc.title}** — *${sc.recommendationReasons[0] || 'Relevant to profile'}*`).join('\n') + `\n\n`;
+      }
+
+      if (recs.employment && recs.employment.length > 0) {
+        replyText += `**Recommended Opportunities:**\n` +
+          recs.employment.map(e => `• **${e.title}** (${e.organization}) — *${e.recommendationReasons[0] || 'Relevant to profile'}*`).join('\n') + `\n\n`;
+      }
+
+      replyText += `*(Note: ${p.disclaimer})*`;
+
+      actions.push({
+        type: 'NAVIGATE',
+        target: 'dashboard',
+        label: 'Open Personalized Dashboard'
+      });
+
+      return {
+        text: replyText,
+        sources: knowledge.sources,
+        actions
+      };
+    }
+
+    // Case 11: Fallback for uncataloged / unverified topics
     return {
       text: "I don't have verified information for that specific query in the official portal knowledge base.\n\nPlease explore our **Government Services Catalog** for cataloged services, or check the official national portals at **myScheme.gov.in** and **scholarships.gov.in**.",
       sources: ['National Citizen Services Directory'],

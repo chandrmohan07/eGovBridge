@@ -1,21 +1,39 @@
 /**
  * Component: DashboardSummary
- * Renders the top-level citizen dashboard overview with interoperability highlights.
+ * Renders the top-level citizen dashboard overview with interoperability highlights
+ * and Phase 18 Personalized Information, Action Cards, and Explainable Recommendations.
  */
 
 export function renderDashboardSummary(store) {
   const summary = store.dashboardSummary;
   const recentApp = store.applications[0];
+  const personalization = store.personalization || {
+    enabled: true,
+    preferences: { persona: 'STUDENT', preferredLocation: 'Maharashtra' },
+    actionCards: [],
+    recommendations: { services: [], scholarships: [], schemes: [], employment: [] }
+  };
+
+  const persona = personalization.preferences?.persona || 'GENERAL';
+  const isEnabled = personalization.enabled !== false;
 
   return `
-    <div class="dashboard-overview">
+    <div class="dashboard-overview" style="max-width: 1100px; margin: 0 auto;">
+      <!-- Header Area -->
       <div class="section-header">
         <div>
-          <h2 class="section-title">Citizen Service Dashboard</h2>
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+            <h2 class="section-title" style="margin: 0;">Citizen Service Dashboard</h2>
+            <span class="badge ${isEnabled ? 'badge-primary' : 'badge-neutral'}" style="font-size: 11px;">
+              🎯 Persona: ${persona}
+            </span>
+          </div>
           <p class="section-subtitle">Welcome back, ${store.citizenProfile.name}. Discover, apply for, and track all government services from a single unified interface.</p>
         </div>
-        <div class="badge badge-success" style="padding: 6px 12px; font-size: 13px;">
-          <span class="status-dot"></span> Interoperability Gateway: Active
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <div class="badge badge-success" style="padding: 6px 12px; font-size: 13px;">
+            <span class="status-dot"></span> Interoperability Gateway: Active
+          </div>
         </div>
       </div>
 
@@ -31,8 +49,33 @@ export function renderDashboardSummary(store) {
           <span class="interop-tag">🤖 AI Citizen Assistance</span>
           <span class="interop-tag">📁 Digital Document Vault</span>
           <span class="interop-tag">🎯 Single Source of Truth</span>
+          <span class="interop-tag">👤 Personalized Discovery</span>
         </div>
       </div>
+
+      <!-- Phase 18: Action Cards (If Active Tasks/Clarifications Exist) -->
+      ${personalization.actionCards && personalization.actionCards.length > 0 ? `
+        <div class="action-cards-container" style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
+          ${personalization.actionCards.map(action => `
+            <div style="display: flex; justify-content: space-between; align-items: center; background: #fffbeb; border: 1px solid #fef3c7; border-left: 4px solid #f59e0b; border-radius: var(--radius-md); padding: 14px 18px; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+                  <span style="font-size: 14px;">⚠️</span>
+                  <strong style="font-size: 14px; color: #92400e;">${action.title}</strong>
+                  <span class="badge badge-warning" style="font-size: 10px;">${action.priority}</span>
+                </div>
+                <p style="font-size: 12px; color: #78350f; margin: 0;">${action.message}</p>
+              </div>
+              <button 
+                class="btn btn-primary btn-sm"
+                onclick="window.app.navigate('${action.targetTab || 'tracking'}')"
+              >
+                ${action.actionLabel || 'View Action'} →
+              </button>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
 
       <!-- Metrics Cards -->
       <div class="metrics-grid">

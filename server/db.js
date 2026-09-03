@@ -745,6 +745,12 @@ export const ANNOUNCEMENTS = [
 // 16. User Saved Content Map (userId -> Set<type:id>)
 export const savedHubItems = new Map();
 
+// 17. Citizen Personalization Preferences Map (userId -> preferences)
+export const citizenPreferences = new Map();
+
+// 18. Citizen Dismissed Recommendations Map (userId -> Set<recommendationId>)
+export const dismissedRecommendations = new Map();
+
 // Helper database functions
 export const db = {
   findUserByEmail(email) {
@@ -1636,6 +1642,92 @@ export const db = {
       return GOVERNMENT_SCHEMES.filter(sc => ids.includes(sc.id));
     }
     return [];
+  },
+
+  // ----------------------------------------------------
+  // Phase 18 — Personalization & Preferences Helpers
+  // ----------------------------------------------------
+  getCitizenPreferences(userId) {
+    const user = this.findUserById(userId);
+    if (!user) return null;
+
+    if (!citizenPreferences.has(userId)) {
+      citizenPreferences.set(userId, {
+        enabled: true,
+        persona: 'GENERAL',
+        educationLevel: 'Undergraduate',
+        qualification: 'Graduate',
+        skills: [],
+        preferredLocation: user.state || 'All India',
+        serviceInterests: ['Education', 'Revenue', 'Health'],
+        schemeCategories: ['Skill Development', 'Financial Inclusion', 'Agriculture'],
+        employmentInterests: ['Government Jobs', 'Apprenticeships'],
+        opportunityTypes: ['JOB', 'APPRENTICESHIP', 'SCHEME'],
+        updatedAt: new Date().toISOString()
+      });
+    }
+
+    return { ...citizenPreferences.get(userId) };
+  },
+
+  updateCitizenPreferences(userId, updates = {}) {
+    const current = this.getCitizenPreferences(userId);
+    if (!current) return null;
+
+    const allowedFields = [
+      'enabled', 'persona', 'educationLevel', 'qualification',
+      'skills', 'preferredLocation', 'serviceInterests',
+      'schemeCategories', 'employmentInterests', 'opportunityTypes'
+    ];
+
+    const updated = { ...current };
+    for (const key of allowedFields) {
+      if (updates[key] !== undefined) {
+        updated[key] = updates[key];
+      }
+    }
+    updated.updatedAt = new Date().toISOString();
+    citizenPreferences.set(userId, updated);
+    return updated;
+  },
+
+  resetCitizenPreferences(userId) {
+    const user = this.findUserById(userId);
+    if (!user) return null;
+
+    const defaults = {
+      enabled: true,
+      persona: 'GENERAL',
+      educationLevel: 'Undergraduate',
+      qualification: 'Graduate',
+      skills: [],
+      preferredLocation: user.state || 'All India',
+      serviceInterests: ['Education', 'Revenue', 'Health'],
+      schemeCategories: ['Skill Development', 'Financial Inclusion', 'Agriculture'],
+      employmentInterests: ['Government Jobs', 'Apprenticeships'],
+      opportunityTypes: ['JOB', 'APPRENTICESHIP', 'SCHEME'],
+      updatedAt: new Date().toISOString()
+    };
+    citizenPreferences.set(userId, defaults);
+    dismissedRecommendations.delete(userId);
+    return defaults;
+  },
+
+  dismissRecommendation(userId, recId) {
+    if (!dismissedRecommendations.has(userId)) {
+      dismissedRecommendations.set(userId, new Set());
+    }
+    dismissedRecommendations.get(userId).add(recId);
+    return true;
+  },
+
+  restoreRecommendation(userId, recId) {
+    if (!dismissedRecommendations.has(userId)) return false;
+    return dismissedRecommendations.get(userId).delete(recId);
+  },
+
+  getDismissedRecommendations(userId) {
+    return dismissedRecommendations.get(userId) || new Set();
   }
 };
 
@@ -1649,6 +1741,8 @@ db.scholarships = SCHOLARSHIPS;
 db.governmentSchemes = GOVERNMENT_SCHEMES;
 db.announcements = ANNOUNCEMENTS;
 db.savedHubItems = savedHubItems;
+db.citizenPreferences = citizenPreferences;
+db.dismissedRecommendations = dismissedRecommendations;
 
 // 6. Canonical Government Service Catalog (Phase 4 Foundation)
 export const SERVICES = [
