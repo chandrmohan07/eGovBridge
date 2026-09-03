@@ -35,6 +35,12 @@ import {
   getDepartmentWorkload,
   OfficerWorkflowError
 } from './officer/officer-workflow.js';
+import {
+  getApplicationTracking,
+  respondToClarification,
+  getCitizenApplications,
+  TrackingError
+} from './tracking/index.js';
 
 function readJsonBody(req) {
   return new Promise((resolve, reject) => {
@@ -387,7 +393,12 @@ export async function handleApiRequest(req, res) {
       let applications = [];
 
       if (user.role === 'CITIZEN') {
-        applications = db.getCitizenApplications(user.id);
+        const filters = {
+          status: url.searchParams.get('status') || 'ALL',
+          department: url.searchParams.get('department') || 'ALL',
+          search: url.searchParams.get('search') || ''
+        };
+        applications = getCitizenApplications(user, filters);
       } else if (user.role === 'OFFICER') {
         applications = db.getDepartmentalApplications(user.departmentCode);
       } else if (user.role === 'ADMIN') {
@@ -459,6 +470,28 @@ export async function handleApiRequest(req, res) {
         success: true,
         application: returnApp
       });
+    }
+
+    // 15a. GET /api/v1/applications/:id/tracking (Comprehensive Citizen Tracking)
+    const appTrackingMatch = pathname.match(/^\/api\/v1\/applications\/([^/]+)\/tracking$/);
+    if (method === 'GET' && appTrackingMatch) {
+      const appId = appTrackingMatch[1];
+      const { user } = authenticateToken(req.headers.authorization);
+      const tracking = getApplicationTracking(user, appId);
+      return sendJson(res, 200, {
+        success: true,
+        tracking
+      });
+    }
+
+    // 15b. POST /api/v1/applications/:id/clarification/respond (Citizen Responds to Clarification)
+    const clarRespondMatch = pathname.match(/^\/api\/v1\/applications\/([^/]+)\/clarification\/respond$/);
+    if (method === 'POST' && clarRespondMatch) {
+      const appId = clarRespondMatch[1];
+      const { user } = authenticateToken(req.headers.authorization);
+      const body = await readJsonBody(req);
+      const result = respondToClarification(user, appId, body);
+      return sendJson(res, 200, result);
     }
 
     // 16. PUT /api/v1/applications/:id (Update an existing Draft)
