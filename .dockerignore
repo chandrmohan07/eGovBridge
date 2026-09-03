@@ -1,0 +1,13 @@
+# Docker build ignore rules
+.git
+.gitignore
+.env
+.env.local
+.env.*.local
+*.log
+*.key
+*.pem
+tests
+.gemini
+coverage
+scratch

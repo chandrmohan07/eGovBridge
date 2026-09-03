@@ -5,6 +5,8 @@
   "description": "Unified Government Service Integration Platform with interoperability layer, API Gateway, and adapters.",
   "type": "module",
   "scripts": {
+    "start": "node scripts/dev-server.js",
+    "build": "node scripts/build.js",
     "test": "node --test tests/**/*.test.js",
     "start:ui": "node scripts/dev-server.js"
   },
