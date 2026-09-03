@@ -4,6 +4,7 @@
  */
 
 import crypto from 'node:crypto';
+import { planWorkflow } from './orchestrator.js';
 
 // Password Hashing Utility using Node native crypto (PBKDF2 / Scrypt)
 export function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
@@ -223,6 +224,9 @@ export const departmentalApplications = [
 // 5. Active Sessions Store (Token -> Session)
 export const sessions = new Map();
 
+// 6. Smart Orchestration Instances Store (Phase 6 Foundation)
+export const orchestrations = [];
+
 // Helper database functions
 export const db = {
   findUserByEmail(email) {
@@ -322,9 +326,20 @@ export const db = {
       updatedAt: now,
       submittedAt: status === 'SUBMITTED' ? now : null,
       submittedDate: now.slice(0, 10),
-      currentStage: status === 'SUBMITTED' ? 'Application Submitted & Awaiting Processing' : 'Draft in Progress',
-      amount: formData.amount || service.fee || 'N/A'
+      currentStage: status === 'SUBMITTED' ? 'Smart Orchestration / Inter-Department Verification' : 'Draft in Progress',
+      amount: formData.amount || service.fee || 'N/A',
+      orchestrationId: null
     };
+
+    if (newApp.status === 'SUBMITTED') {
+      const orch = this.createOrchestration({
+        applicationId: newApp.id,
+        applicantId: newApp.applicantId,
+        serviceId: newApp.serviceId,
+        formData: newApp.formData
+      });
+      newApp.orchestrationId = orch.id;
+    }
 
     departmentalApplications.push(newApp);
     return newApp;
@@ -356,7 +371,16 @@ export const db = {
       if (status === 'SUBMITTED' && !app.submittedAt) {
         app.submittedAt = now;
         app.submittedDate = now.slice(0, 10);
-        app.currentStage = 'Application Submitted & Awaiting Processing';
+        app.currentStage = 'Smart Orchestration / Inter-Department Verification';
+        if (!app.orchestrationId) {
+          const orch = this.createOrchestration({
+            applicationId: app.id,
+            applicantId: app.applicantId,
+            serviceId: app.serviceId,
+            formData: app.formData
+          });
+          app.orchestrationId = orch.id;
+        }
       }
     }
     app.updatedAt = now;
@@ -371,6 +395,72 @@ export const db = {
   getCitizenApplications(applicantId) {
     if (!applicantId) return [];
     return departmentalApplications.filter(a => a.applicantId === applicantId);
+  },
+
+  // Orchestration Methods (Phase 6)
+  createOrchestration({ applicationId, applicantId, serviceId, formData = {} }) {
+    const service = this.getServiceById(serviceId);
+    if (!service) {
+      throw new Error(`Service not found with ID: ${serviceId}`);
+    }
+
+    const tasks = planWorkflow(service, formData);
+    const id = `ORCH-2026-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+    const now = new Date().toISOString();
+
+    const orchestration = {
+      id,
+      applicationId,
+      applicantId,
+      serviceId: service.id,
+      serviceName: service.title,
+      department: service.department,
+      departmentCode: service.departmentCode,
+      tasks,
+      status: 'CREATED',
+      retryCount: 0,
+      error: null,
+      createdAt: now,
+      updatedAt: now,
+      completedAt: null
+    };
+
+    orchestrations.push(orchestration);
+    return orchestration;
+  },
+
+  getOrchestrationById(id) {
+    if (!id) return null;
+    return orchestrations.find(o => o.id.toLowerCase() === id.toLowerCase().trim()) || null;
+  },
+
+  getOrchestrationByApplicationId(applicationId) {
+    if (!applicationId) return null;
+    return orchestrations.find(o => o.applicationId.toLowerCase() === applicationId.toLowerCase().trim()) || null;
+  },
+
+  getCitizenOrchestrations(applicantId) {
+    if (!applicantId) return [];
+    return orchestrations.filter(o => o.applicantId === applicantId);
+  },
+
+  getDepartmentalOrchestrations(departmentCode) {
+    if (!departmentCode) return [];
+    return orchestrations.filter(o => o.departmentCode === departmentCode);
+  },
+
+  getAllOrchestrations() {
+    return orchestrations;
+  },
+
+  updateOrchestration(id, updates = {}) {
+    const orch = this.getOrchestrationById(id);
+    if (!orch) {
+      throw new Error(`Orchestration not found with ID: ${id}`);
+    }
+
+    Object.assign(orch, updates, { updatedAt: new Date().toISOString() });
+    return orch;
   },
 
   getAllUsersSafe() {

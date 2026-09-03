@@ -61,6 +61,9 @@ export function renderApplicationTracking(store) {
             <div style="text-align: right;">
               <span style="font-size: 11px; color: var(--text-muted); display: block;">Last Activity</span>
               <span style="font-size: 13px; font-weight: 600; color: var(--text-main);">${app.lastUpdated}</span>
+              <button class="btn btn-outline btn-sm" style="margin-top: 6px; display: block;" onclick="window.app.viewOrchestrationForApplication('${app.id}')">
+                ⚙️ Orchestration Graph
+              </button>
             </div>
           </div>
 

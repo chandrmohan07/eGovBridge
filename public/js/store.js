@@ -16,6 +16,11 @@ export const store = {
   activeApplicationDraft: null,
   myApplications: [],
 
+  // Smart Orchestration Engine State (Phase 6)
+  activeOrchestrationId: null,
+  activeOrchestration: null,
+  orchestrations: [],
+
   // Authentication & RBAC State (Phase 3)
   token: null,
   isAuthenticated: true,

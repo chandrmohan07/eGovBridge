@@ -20,6 +20,7 @@ import { renderAdminPortal } from './components/AdminPortal.js';
 import { renderAccessDenied } from './components/AccessDenied.js';
 import { renderServiceDetails } from './components/ServiceDetails.js';
 import { renderApplicationWorkflow } from './components/ApplicationWorkflow.js';
+import { renderOrchestrationView } from './components/OrchestrationView.js';
 
 class App {
   constructor() {
@@ -571,6 +572,120 @@ class App {
     }
   }
 
+  // --- Phase 6: Smart Orchestration Handlers ---
+  async viewOrchestration(orchId) {
+    try {
+      const res = await fetch(`/api/v1/orchestrations/${orchId}`, {
+        headers: {
+          'Authorization': `Bearer ${this.store.token || 'demo-citizen-token'}`
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        this.store.activeOrchestrationId = orchId;
+        this.store.activeOrchestration = data.orchestration;
+        this.store.activeTab = 'orchestration';
+        this.render();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+    } catch (e) {
+      console.error('Failed to load orchestration from server', e);
+    }
+
+    // Fallback if not found on server
+    this.store.activeOrchestrationId = orchId;
+    this.store.activeTab = 'orchestration';
+    this.render();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async viewOrchestrationForApplication(applicationId) {
+    try {
+      const res = await fetch('/api/v1/orchestrations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.store.token || 'demo-citizen-token'}`
+        },
+        body: JSON.stringify({ applicationId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        this.store.activeOrchestrationId = data.orchestration.id;
+        this.store.activeOrchestration = data.orchestration;
+        this.store.activeTab = 'orchestration';
+        this.render();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+    } catch (e) {
+      console.error('Error fetching orchestration for application', e);
+    }
+
+    alert(`Orchestration record for application ${applicationId} is being prepared.`);
+  }
+
+  async stepOrchestration(orchId) {
+    try {
+      const res = await fetch(`/api/v1/orchestrations/${orchId}/execute`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.store.token || 'demo-citizen-token'}`
+        },
+        body: JSON.stringify({ maxSteps: 1 })
+      });
+      const data = await res.json();
+      if (data.success) {
+        this.store.activeOrchestration = data.orchestration;
+        this.render();
+      }
+    } catch (e) {
+      console.error('Error stepping orchestration', e);
+    }
+  }
+
+  async executeOrchestration(orchId) {
+    try {
+      const res = await fetch(`/api/v1/orchestrations/${orchId}/execute`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.store.token || 'demo-citizen-token'}`
+        },
+        body: JSON.stringify({ maxSteps: 10 })
+      });
+      const data = await res.json();
+      if (data.success) {
+        this.store.activeOrchestration = data.orchestration;
+        this.render();
+      }
+    } catch (e) {
+      console.error('Error executing orchestration', e);
+    }
+  }
+
+  async retryOrchestrationTask(orchId, taskCode) {
+    try {
+      const res = await fetch(`/api/v1/orchestrations/${orchId}/retry`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.store.token || 'demo-citizen-token'}`
+        },
+        body: JSON.stringify({ taskCode })
+      });
+      const data = await res.json();
+      if (data.success) {
+        this.store.activeOrchestration = data.orchestration;
+        this.render();
+      }
+    } catch (e) {
+      console.error('Error retrying orchestration task', e);
+    }
+  }
+
   // AI Chat Handlers
   sendAIChatPrompt(promptText) {
     const input = document.getElementById('chatUserPromptInput');
@@ -865,6 +980,8 @@ class App {
         return renderServiceDetails(this.store, this.store.activeServiceDetailsId);
       case 'application-workflow':
         return renderApplicationWorkflow(this.store);
+      case 'orchestration':
+        return renderOrchestrationView(this.store, this.store.activeOrchestrationId);
       default:
         return renderDashboardSummary(this.store);
     }

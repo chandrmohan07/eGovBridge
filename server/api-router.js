@@ -6,6 +6,7 @@
 import { register, login, logout, authenticateToken, requireRole, requireDepartmentScope, AuthError } from './auth.js';
 import { db } from './db.js';
 import { validateApplicationPayload, validateDocument } from './validation.js';
+import { stepOrchestration, executeTask, updateTaskDependencies, computeOrchestrationStatus, TASK_STATUS, ORCHESTRATION_STATUS } from './orchestrator.js';
 
 function readJsonBody(req) {
   return new Promise((resolve, reject) => {
@@ -306,6 +307,178 @@ export async function handleApiRequest(req, res) {
         success: true,
         message: 'Application draft updated successfully',
         application: updated
+      });
+    }
+
+    // 17. POST /api/v1/orchestrations (Create/Retrieve Orchestration for Application)
+    if (method === 'POST' && pathname === '/api/v1/orchestrations') {
+      const { user } = authenticateToken(req.headers.authorization);
+      const body = await readJsonBody(req);
+      const { applicationId } = body;
+
+      if (!applicationId) {
+        return sendJson(res, 400, { success: false, error: 'Application ID is required' });
+      }
+
+      const app = db.getApplicationById(applicationId);
+      if (!app) {
+        return sendJson(res, 404, { success: false, error: `Application not found with ID: ${applicationId}` });
+      }
+
+      // Check ownership / department access
+      if (user.role === 'CITIZEN' && app.applicantId !== user.id) {
+        return sendJson(res, 403, { success: false, error: 'Access Denied: You do not own this application' });
+      }
+      if (user.role === 'OFFICER' && app.departmentCode !== user.departmentCode) {
+        return sendJson(res, 403, { success: false, error: 'Access Denied: Officer cannot access applications outside assigned department' });
+      }
+
+      let orch = db.getOrchestrationByApplicationId(applicationId);
+      if (!orch) {
+        orch = db.createOrchestration({
+          applicationId: app.id,
+          applicantId: app.applicantId,
+          serviceId: app.serviceId,
+          formData: app.formData
+        });
+        app.orchestrationId = orch.id;
+      }
+
+      return sendJson(res, 200, {
+        success: true,
+        orchestration: orch
+      });
+    }
+
+    // 18. GET /api/v1/orchestrations (List Orchestrations)
+    if (method === 'GET' && pathname === '/api/v1/orchestrations') {
+      const { user } = authenticateToken(req.headers.authorization);
+      let list = [];
+
+      if (user.role === 'CITIZEN') {
+        list = db.getCitizenOrchestrations(user.id);
+      } else if (user.role === 'OFFICER') {
+        list = db.getDepartmentalOrchestrations(user.departmentCode);
+      } else if (user.role === 'ADMIN') {
+        list = db.getAllOrchestrations();
+      }
+
+      return sendJson(res, 200, {
+        success: true,
+        count: list.length,
+        orchestrations: list
+      });
+    }
+
+    // 19. POST /api/v1/orchestrations/:id/execute (Execute Next Tasks in DAG)
+    const orchExecMatch = pathname.match(/^\/api\/v1\/orchestrations\/([^/]+)\/execute$/);
+    if (method === 'POST' && orchExecMatch) {
+      const orchId = orchExecMatch[1];
+      const { user } = authenticateToken(req.headers.authorization);
+      const orch = db.getOrchestrationById(orchId);
+
+      if (!orch) {
+        return sendJson(res, 404, { success: false, error: `Orchestration not found with ID: ${orchId}` });
+      }
+
+      if (user.role === 'CITIZEN' && orch.applicantId !== user.id) {
+        return sendJson(res, 403, { success: false, error: 'Access Denied: You do not own this orchestration' });
+      }
+      if (user.role === 'OFFICER' && orch.departmentCode !== user.departmentCode) {
+        return sendJson(res, 403, { success: false, error: 'Access Denied: Officer cannot access orchestrations outside assigned department' });
+      }
+
+      const body = await readJsonBody(req);
+      const maxSteps = body.maxSteps || 10;
+      const context = body.context || {};
+
+      await stepOrchestration(orch, { maxSteps, context });
+
+      // Update linked application's stage
+      const app = db.getApplicationById(orch.applicationId);
+      if (app) {
+        if (orch.status === ORCHESTRATION_STATUS.COMPLETED) {
+          app.currentStage = 'All Department Interoperability Verifications Approved';
+        } else if (orch.status === ORCHESTRATION_STATUS.FAILED) {
+          app.currentStage = 'Orchestration Task Failed — Manual Scrutiny Required';
+        } else {
+          const inProgTask = orch.tasks.find(t => t.status === TASK_STATUS.IN_PROGRESS || t.status === TASK_STATUS.READY);
+          if (inProgTask) {
+            app.currentStage = `Smart Orchestration: ${inProgTask.title}`;
+          }
+        }
+      }
+
+      return sendJson(res, 200, {
+        success: true,
+        orchestration: orch
+      });
+    }
+
+    // 20. POST /api/v1/orchestrations/:id/retry (Retry a Failed or Blocked Task)
+    const orchRetryMatch = pathname.match(/^\/api\/v1\/orchestrations\/([^/]+)\/retry$/);
+    if (method === 'POST' && orchRetryMatch) {
+      const orchId = orchRetryMatch[1];
+      const { user } = authenticateToken(req.headers.authorization);
+      const orch = db.getOrchestrationById(orchId);
+
+      if (!orch) {
+        return sendJson(res, 404, { success: false, error: `Orchestration not found with ID: ${orchId}` });
+      }
+
+      if (user.role === 'CITIZEN' && orch.applicantId !== user.id) {
+        return sendJson(res, 403, { success: false, error: 'Access Denied: You do not own this orchestration' });
+      }
+      if (user.role === 'OFFICER' && orch.departmentCode !== user.departmentCode) {
+        return sendJson(res, 403, { success: false, error: 'Access Denied: Officer cannot access orchestrations outside assigned department' });
+      }
+
+      const body = await readJsonBody(req);
+      const taskCode = body.taskCode;
+      const context = body.context || {};
+
+      // Reset target task or first failed task
+      let targetTask = taskCode ? orch.tasks.find(t => t.code === taskCode) : orch.tasks.find(t => t.status === TASK_STATUS.FAILED);
+      if (targetTask) {
+        targetTask.status = TASK_STATUS.READY;
+        targetTask.error = null;
+        targetTask.retryCount = 0;
+      }
+
+      // Unblock downstream tasks that were blocked
+      updateTaskDependencies(orch.tasks);
+
+      // Execute next step
+      await stepOrchestration(orch, { maxSteps: 10, context });
+
+      return sendJson(res, 200, {
+        success: true,
+        message: 'Task retry initiated successfully',
+        orchestration: orch
+      });
+    }
+
+    // 21. GET /api/v1/orchestrations/:id (Retrieve Single Orchestration)
+    const orchGetMatch = pathname.match(/^\/api\/v1\/orchestrations\/([^/]+)$/);
+    if (method === 'GET' && orchGetMatch) {
+      const orchId = orchGetMatch[1];
+      const { user } = authenticateToken(req.headers.authorization);
+      const orch = db.getOrchestrationById(orchId);
+
+      if (!orch) {
+        return sendJson(res, 404, { success: false, error: `Orchestration not found with ID: ${orchId}` });
+      }
+
+      if (user.role === 'CITIZEN' && orch.applicantId !== user.id) {
+        return sendJson(res, 403, { success: false, error: 'Access Denied: You do not own this orchestration' });
+      }
+      if (user.role === 'OFFICER' && orch.departmentCode !== user.departmentCode) {
+        return sendJson(res, 403, { success: false, error: 'Access Denied: Officer cannot access orchestrations outside assigned department' });
+      }
+
+      return sendJson(res, 200, {
+        success: true,
+        orchestration: orch
       });
     }
 

@@ -724,8 +724,11 @@ function renderStep5Confirmation(draft, service) {
         <button class="btn btn-outline" onclick="window.app.navigate('services')">
           Explore Other Services
         </button>
-        <button class="btn btn-primary" onclick="window.app.navigate('tracking')">
-          View My Applications & Track Status
+        <button class="btn btn-outline" onclick="window.app.navigate('tracking')">
+          View Applications
+        </button>
+        <button class="btn btn-primary" onclick="window.app.viewOrchestrationForApplication('${appId}')">
+          ⚡ Track Smart Orchestration Graph
         </button>
       </div>
     </div>
