@@ -8,6 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { handleApiRequest } from '../server/api-router.js';
+import { apiGateway } from '../server/gateway.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,9 +29,9 @@ const MIME_TYPES = {
 
 export function createServer() {
   return http.createServer(async (req, res) => {
-    // 1. Dispatch REST API requests to the backend API router
+    // 1. Dispatch REST API requests through the API Gateway layer
     if (req.url.startsWith('/api/')) {
-      return handleApiRequest(req, res);
+      return apiGateway(req, res, handleApiRequest);
     }
 
     // 2. Dispatch static files

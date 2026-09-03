@@ -34,6 +34,10 @@ function readJsonBody(req) {
 }
 
 function sendJson(res, statusCode, data) {
+  const reqId = res.getHeader('X-Request-Id');
+  if (reqId && typeof data === 'object' && data !== null && !data.requestId) {
+    data.requestId = reqId;
+  }
   res.writeHead(statusCode, {
     'Content-Type': 'application/json; charset=utf-8',
     'Cache-Control': 'no-store'
