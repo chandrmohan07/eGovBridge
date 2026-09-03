@@ -751,6 +751,89 @@ export const citizenPreferences = new Map();
 // 18. Citizen Dismissed Recommendations Map (userId -> Set<recommendationId>)
 export const dismissedRecommendations = new Map();
 
+// 19. Grievance Store (Phase 19 Foundation)
+export const GRIEVANCES = [
+  {
+    id: 'GRV-2026-EDU-001',
+    ticketId: 'GRV-2026-EDU-001',
+    citizenId: 'USR-CIT-001',
+    citizenName: 'Rahul Verma',
+    citizenEmail: 'citizen@example.com',
+    citizenPhone: '+91 98765 43210',
+    departmentId: 'DEP-EDU',
+    departmentCode: 'EDUCATION',
+    category: 'Service Delay',
+    subject: 'Delay in Higher Education Scholarship Verification',
+    description: 'My application for the Post-Matric Scholarship has been pending verification for over 15 business days without status updates.',
+    priority: 'HIGH',
+    status: 'UNDER_REVIEW',
+    applicationId: 'APP-2026-EDU-8812',
+    serviceId: 'SRV-EDU-001',
+    serviceTitle: 'Post-Matric Scholarship for Higher Education',
+    assignedOfficerId: 'USR-OFF-EDU-001',
+    assignedOfficerName: 'Dr. Ramesh Sharma',
+    supportingDocuments: [
+      {
+        id: 'DOC-SEED-001',
+        name: 'Aadhaar_Card_Verified.pdf',
+        documentType: 'IDENTITY_PROOF'
+      }
+    ],
+    citizenComments: [],
+    internalNotes: [
+      {
+        noteId: 'NOTE-GRV-001',
+        officerId: 'USR-OFF-EDU-001',
+        officerName: 'Dr. Ramesh Sharma',
+        note: 'Escalated to university verification officer to expedite marksheet audit.',
+        timestamp: '2026-09-02T11:00:00Z'
+      }
+    ],
+    clarifications: [],
+    resolutionReason: null,
+    rejectionReason: null,
+    timeline: [
+      {
+        id: 'TL-GRV-001',
+        event: 'SUBMITTED',
+        actor: 'Rahul Verma',
+        role: 'CITIZEN',
+        timestamp: '2026-09-01T09:30:00Z',
+        description: 'Grievance ticket registered under Higher Education Department.'
+      },
+      {
+        id: 'TL-GRV-002',
+        event: 'ASSIGNED',
+        actor: 'Dr. Ramesh Sharma',
+        role: 'OFFICER',
+        timestamp: '2026-09-02T10:15:00Z',
+        description: 'Grievance claimed by Dr. Ramesh Sharma for departmental investigation.'
+      }
+    ],
+    version: 1,
+    createdAt: '2026-09-01T09:30:00Z',
+    updatedAt: '2026-09-02T10:15:00Z',
+    resolvedAt: null,
+    closedAt: null
+  }
+];
+
+// 20. Citizen Feedback Store (Phase 19 Foundation)
+export const FEEDBACK = [
+  {
+    id: 'FDB-2026-001',
+    citizenId: 'USR-CIT-001',
+    citizenName: 'Rahul Verma',
+    serviceId: 'SRV-REV-002',
+    serviceTitle: 'Income & Asset Certificate Issuance',
+    applicationId: 'APP-2026-REV-4419',
+    rating: 5,
+    category: 'Service Experience',
+    feedbackText: 'Income certificate was issued in 48 hours thanks to automatic inter-department verification with DigiLocker. Excellent initiative!',
+    createdAt: '2026-08-28T16:00:00Z'
+  }
+];
+
 // Helper database functions
 export const db = {
   findUserByEmail(email) {
@@ -1728,6 +1811,171 @@ export const db = {
 
   getDismissedRecommendations(userId) {
     return dismissedRecommendations.get(userId) || new Set();
+  },
+
+  // ----------------------------------------------------
+  // Phase 19 — Grievance & Feedback Helpers
+  // ----------------------------------------------------
+  getGrievances(filters = {}) {
+    let list = [...GRIEVANCES];
+
+    if (filters.citizenId) {
+      list = list.filter(g => g.citizenId === filters.citizenId);
+    }
+
+    if (filters.departmentId && filters.departmentId !== 'ALL') {
+      list = list.filter(g => g.departmentId === filters.departmentId);
+    }
+
+    if (filters.status && filters.status !== 'ALL') {
+      const st = filters.status.toUpperCase();
+      list = list.filter(g => g.status === st);
+    }
+
+    if (filters.category && filters.category !== 'ALL') {
+      const cat = filters.category.toLowerCase();
+      list = list.filter(g => g.category.toLowerCase() === cat);
+    }
+
+    if (filters.priority && filters.priority !== 'ALL') {
+      const pr = filters.priority.toUpperCase();
+      list = list.filter(g => g.priority === pr);
+    }
+
+    if (filters.search) {
+      const s = filters.search.toLowerCase().trim();
+      list = list.filter(g => 
+        g.id.toLowerCase().includes(s) ||
+        g.subject.toLowerCase().includes(s) ||
+        g.description.toLowerCase().includes(s) ||
+        (g.citizenName && g.citizenName.toLowerCase().includes(s))
+      );
+    }
+
+    list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    const limit = Math.min(parseInt(filters.limit || '50', 10), 100);
+    const offset = Math.max(parseInt(filters.offset || '0', 10), 0);
+    const paged = list.slice(offset, offset + limit);
+
+    return {
+      total: list.length,
+      limit,
+      offset,
+      grievances: paged
+    };
+  },
+
+  getGrievanceById(id) {
+    return GRIEVANCES.find(g => g.id === id || g.ticketId === id);
+  },
+
+  createGrievance(data) {
+    const deptCode = data.departmentCode || (data.departmentId ? data.departmentId.replace('DEP-', '') : 'GEN');
+    const rand = Math.floor(1000 + Math.random() * 9000);
+    const id = `GRV-2026-${deptCode}-${rand}`;
+    const now = new Date().toISOString();
+
+    const g = {
+      id,
+      ticketId: id,
+      citizenId: data.citizenId,
+      citizenName: data.citizenName || 'Citizen',
+      citizenEmail: data.citizenEmail || '',
+      citizenPhone: data.citizenPhone || '',
+      departmentId: data.departmentId,
+      departmentCode: deptCode,
+      category: data.category || 'Other',
+      subject: data.subject,
+      description: data.description,
+      priority: (data.priority || 'MEDIUM').toUpperCase(),
+      status: 'SUBMITTED',
+      applicationId: data.applicationId || null,
+      serviceId: data.serviceId || null,
+      serviceTitle: data.serviceTitle || null,
+      assignedOfficerId: null,
+      assignedOfficerName: null,
+      supportingDocuments: Array.isArray(data.supportingDocuments) ? data.supportingDocuments : [],
+      citizenComments: [],
+      internalNotes: [],
+      clarifications: [],
+      resolutionReason: null,
+      rejectionReason: null,
+      timeline: [
+        {
+          id: `TL-GRV-${Math.floor(100 + Math.random() * 900)}`,
+          event: 'SUBMITTED',
+          actor: data.citizenName || 'Citizen',
+          role: 'CITIZEN',
+          timestamp: now,
+          description: `Grievance registered under ${deptCode} department.`
+        }
+      ],
+      version: 1,
+      createdAt: now,
+      updatedAt: now,
+      resolvedAt: null,
+      closedAt: null
+    };
+
+    GRIEVANCES.unshift(g);
+    return g;
+  },
+
+  updateGrievance(id, updates) {
+    const g = this.getGrievanceById(id);
+    if (!g) return null;
+    Object.assign(g, updates, {
+      updatedAt: new Date().toISOString(),
+      version: (g.version || 1) + 1
+    });
+    return g;
+  },
+
+  getFeedback(filters = {}) {
+    let list = [...FEEDBACK];
+
+    if (filters.serviceId) {
+      list = list.filter(f => f.serviceId === filters.serviceId);
+    }
+    if (filters.citizenId) {
+      list = list.filter(f => f.citizenId === filters.citizenId);
+    }
+    if (filters.applicationId) {
+      list = list.filter(f => f.applicationId === filters.applicationId);
+    }
+
+    list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    const limit = Math.min(parseInt(filters.limit || '50', 10), 100);
+    const offset = Math.max(parseInt(filters.offset || '0', 10), 0);
+
+    return {
+      total: list.length,
+      feedback: list.slice(offset, offset + limit)
+    };
+  },
+
+  createFeedback(data) {
+    const id = `FDB-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+    const now = new Date().toISOString();
+
+    const f = {
+      id,
+      citizenId: data.citizenId,
+      citizenName: data.citizenName || 'Citizen',
+      serviceId: data.serviceId || null,
+      serviceTitle: data.serviceTitle || null,
+      applicationId: data.applicationId || null,
+      grievanceId: data.grievanceId || null,
+      rating: Math.max(1, Math.min(5, parseInt(data.rating || '5', 10))),
+      category: data.category || 'General',
+      feedbackText: data.feedbackText || '',
+      createdAt: now
+    };
+
+    FEEDBACK.unshift(f);
+    return f;
   }
 };
 
@@ -1743,6 +1991,8 @@ db.announcements = ANNOUNCEMENTS;
 db.savedHubItems = savedHubItems;
 db.citizenPreferences = citizenPreferences;
 db.dismissedRecommendations = dismissedRecommendations;
+db.grievances = GRIEVANCES;
+db.feedback = FEEDBACK;
 
 // 6. Canonical Government Service Catalog (Phase 4 Foundation)
 export const SERVICES = [

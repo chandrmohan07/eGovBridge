@@ -124,6 +124,24 @@ import {
   getPersonalizationMetrics,
   PersonalizationError
 } from './personalization/index.js';
+import {
+  createGrievance,
+  getGrievanceById,
+  listGrievances,
+  claimGrievance,
+  addGrievanceInternalNote,
+  requestGrievanceClarification,
+  respondToGrievanceClarification,
+  resolveGrievance,
+  rejectGrievance,
+  closeGrievance,
+  getGrievanceTimeline,
+  submitFeedback,
+  listFeedback,
+  getGrievanceAnalytics,
+  GRIEVANCE_CATEGORIES,
+  GrievanceError
+} from './grievances/index.js';
 
 function readJsonBody(req, maxLimit = 10 * 1024 * 1024) {
   return new Promise((resolve, reject) => {
@@ -1730,6 +1748,159 @@ export async function handleApiRequest(req, res) {
       const { user } = authenticateToken(req.headers.authorization);
       requireRole(user, ['ADMIN']);
       const result = getPersonalizationMetrics(user);
+      return sendJson(res, 200, result);
+    }
+
+    // ==========================================
+    // PHASE 19 — FEEDBACK & GRIEVANCE ENDPOINTS
+    // ==========================================
+
+    // 98. POST /api/v1/grievances (Citizen: submit grievance)
+    if (method === 'POST' && pathname === '/api/v1/grievances') {
+      const { user } = authenticateToken(req.headers.authorization);
+      const body = await readJsonBody(req);
+      const result = await createGrievance(user, body);
+      return sendJson(res, 201, result);
+    }
+
+    // 99. GET /api/v1/grievances (List grievances with RBAC filtering)
+    if (method === 'GET' && pathname === '/api/v1/grievances') {
+      const { user } = authenticateToken(req.headers.authorization);
+      const filters = {
+        departmentId: url.searchParams.get('departmentId'),
+        status: url.searchParams.get('status'),
+        category: url.searchParams.get('category'),
+        priority: url.searchParams.get('priority'),
+        search: url.searchParams.get('search'),
+        limit: url.searchParams.get('limit'),
+        offset: url.searchParams.get('offset')
+      };
+      const result = listGrievances(user, filters);
+      return sendJson(res, 200, result);
+    }
+
+    // 100. GET /api/v1/grievances/categories (Configurable grievance categories)
+    if (method === 'GET' && pathname === '/api/v1/grievances/categories') {
+      return sendJson(res, 200, {
+        success: true,
+        categories: GRIEVANCE_CATEGORIES
+      });
+    }
+
+    // 101. GET /api/v1/grievances/analytics (Admin: Aggregated analytics)
+    if (method === 'GET' && pathname === '/api/v1/grievances/analytics') {
+      const { user } = authenticateToken(req.headers.authorization);
+      requireRole(user, ['ADMIN']);
+      const result = getGrievanceAnalytics(user);
+      return sendJson(res, 200, result);
+    }
+
+    // Parametric Grievance Routes
+    const grvIdMatch = pathname.match(/^\/api\/v1\/grievances\/([^/]+)$/);
+    const grvClaimMatch = pathname.match(/^\/api\/v1\/grievances\/([^/]+)\/claim$/);
+    const grvNotesMatch = pathname.match(/^\/api\/v1\/grievances\/([^/]+)\/notes$/);
+    const grvClarifyMatch = pathname.match(/^\/api\/v1\/grievances\/([^/]+)\/clarification$/);
+    const grvRespondMatch = pathname.match(/^\/api\/v1\/grievances\/([^/]+)\/respond$/);
+    const grvResolveMatch = pathname.match(/^\/api\/v1\/grievances\/([^/]+)\/resolve$/);
+    const grvRejectMatch = pathname.match(/^\/api\/v1\/grievances\/([^/]+)\/reject$/);
+    const grvCloseMatch = pathname.match(/^\/api\/v1\/grievances\/([^/]+)\/close$/);
+    const grvTimelineMatch = pathname.match(/^\/api\/v1\/grievances\/([^/]+)\/timeline$/);
+
+    // 102. GET /api/v1/grievances/:id
+    if (method === 'GET' && grvIdMatch && !['categories', 'analytics'].includes(grvIdMatch[1])) {
+      const { user } = authenticateToken(req.headers.authorization);
+      const id = grvIdMatch[1];
+      const result = getGrievanceById(user, id);
+      return sendJson(res, 200, result);
+    }
+
+    // 103. POST /api/v1/grievances/:id/claim
+    if (method === 'POST' && grvClaimMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      const id = grvClaimMatch[1];
+      const result = await claimGrievance(user, id);
+      return sendJson(res, 200, result);
+    }
+
+    // 104. POST /api/v1/grievances/:id/notes
+    if (method === 'POST' && grvNotesMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      const id = grvNotesMatch[1];
+      const body = await readJsonBody(req);
+      const result = addGrievanceInternalNote(user, id, body.note);
+      return sendJson(res, 201, result);
+    }
+
+    // 105. POST /api/v1/grievances/:id/clarification
+    if (method === 'POST' && grvClarifyMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      const id = grvClarifyMatch[1];
+      const body = await readJsonBody(req);
+      const result = await requestGrievanceClarification(user, id, body.question);
+      return sendJson(res, 200, result);
+    }
+
+    // 106. POST /api/v1/grievances/:id/respond
+    if (method === 'POST' && grvRespondMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      const id = grvRespondMatch[1];
+      const body = await readJsonBody(req);
+      const result = await respondToGrievanceClarification(user, id, body);
+      return sendJson(res, 200, result);
+    }
+
+    // 107. POST /api/v1/grievances/:id/resolve
+    if (method === 'POST' && grvResolveMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      const id = grvResolveMatch[1];
+      const body = await readJsonBody(req);
+      const result = await resolveGrievance(user, id, body);
+      return sendJson(res, 200, result);
+    }
+
+    // 108. POST /api/v1/grievances/:id/reject
+    if (method === 'POST' && grvRejectMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      const id = grvRejectMatch[1];
+      const body = await readJsonBody(req);
+      const result = await rejectGrievance(user, id, body);
+      return sendJson(res, 200, result);
+    }
+
+    // 109. POST /api/v1/grievances/:id/close
+    if (method === 'POST' && grvCloseMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      const id = grvCloseMatch[1];
+      const body = await readJsonBody(req);
+      const result = await closeGrievance(user, id, body);
+      return sendJson(res, 200, result);
+    }
+
+    // 110. GET /api/v1/grievances/:id/timeline
+    if (method === 'GET' && grvTimelineMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      const id = grvTimelineMatch[1];
+      const result = getGrievanceTimeline(user, id);
+      return sendJson(res, 200, result);
+    }
+
+    // 111. POST /api/v1/feedback
+    if (method === 'POST' && pathname === '/api/v1/feedback') {
+      const { user } = authenticateToken(req.headers.authorization);
+      const body = await readJsonBody(req);
+      const result = submitFeedback(user, body);
+      return sendJson(res, 201, result);
+    }
+
+    // 112. GET /api/v1/feedback
+    if (method === 'GET' && pathname === '/api/v1/feedback') {
+      const { user } = authenticateToken(req.headers.authorization);
+      const filters = {
+        serviceId: url.searchParams.get('serviceId'),
+        applicationId: url.searchParams.get('applicationId'),
+        limit: url.searchParams.get('limit')
+      };
+      const result = listFeedback(user, filters);
       return sendJson(res, 200, result);
     }
 
