@@ -1,0 +1,144 @@
+{
+  "notificationTypes": [
+    {
+      "code": "APPLICATION_SUBMITTED",
+      "name": "Application Submitted",
+      "category": "Application",
+      "defaultPriority": "NORMAL",
+      "template": {
+        "title": "Application Submitted: {serviceName}",
+        "message": "Your application ({applicationId}) for {serviceName} has been successfully submitted and entered the departmental queue."
+      }
+    },
+    {
+      "code": "APPLICATION_RECEIVED",
+      "name": "Application Received",
+      "category": "Application",
+      "defaultPriority": "NORMAL",
+      "template": {
+        "title": "Application Received by {departmentCode}",
+        "message": "Application {applicationId} has been received by the nodal department and queued for officer assignment."
+      }
+    },
+    {
+      "code": "APPLICATION_ASSIGNED",
+      "name": "Officer Assigned",
+      "category": "Application",
+      "defaultPriority": "NORMAL",
+      "template": {
+        "title": "Application Assigned to Review Officer",
+        "message": "Your application ({applicationId}) has been assigned to an authorized officer for verification."
+      }
+    },
+    {
+      "code": "APPLICATION_UNDER_REVIEW",
+      "name": "Under Active Review",
+      "category": "Application",
+      "defaultPriority": "NORMAL",
+      "template": {
+        "title": "Scrutiny Commenced: {applicationId}",
+        "message": "Formal departmental review and scrutiny has commenced for your application ({applicationId})."
+      }
+    },
+    {
+      "code": "VERIFICATION_REQUIRED",
+      "name": "Verification Required",
+      "category": "Verification",
+      "defaultPriority": "HIGH",
+      "template": {
+        "title": "Inter-Department Verification: {serviceName}",
+        "message": "Application {applicationId} requires automated inter-department cross-verification ({departmentCode})."
+      }
+    },
+    {
+      "code": "CLARIFICATION_REQUIRED",
+      "name": "Clarification Required",
+      "category": "Action Required",
+      "defaultPriority": "URGENT",
+      "template": {
+        "title": "Action Required: Clarification Requested",
+        "message": "The department officer reviewing application {applicationId} requires additional information or documents: {reason}"
+      }
+    },
+    {
+      "code": "CLARIFICATION_SUBMITTED",
+      "name": "Clarification Submitted",
+      "category": "Application",
+      "defaultPriority": "NORMAL",
+      "template": {
+        "title": "Citizen Clarification Received: {applicationId}",
+        "message": "The applicant has submitted clarification for application {applicationId}. Ready for re-evaluation."
+      }
+    },
+    {
+      "code": "DOCUMENT_REQUIRED",
+      "name": "Document Required",
+      "category": "Action Required",
+      "defaultPriority": "HIGH",
+      "template": {
+        "title": "Missing Document for {applicationId}",
+        "message": "Please attach the required document from your Digital Document Vault to proceed with {serviceName}."
+      }
+    },
+    {
+      "code": "APPLICATION_APPROVED",
+      "name": "Application Approved",
+      "category": "Approval",
+      "defaultPriority": "HIGH",
+      "template": {
+        "title": "Application Approved: {serviceName}",
+        "message": "Congratulations! Your application ({applicationId}) has been approved by the department. {remarks}"
+      }
+    },
+    {
+      "code": "APPLICATION_REJECTED",
+      "name": "Application Rejected",
+      "category": "Rejection",
+      "defaultPriority": "HIGH",
+      "template": {
+        "title": "Application Rejected: {serviceName}",
+        "message": "Your application ({applicationId}) was not approved. Documented reason: {reason}"
+      }
+    },
+    {
+      "code": "APPLICATION_COMPLETED",
+      "name": "Application Completed",
+      "category": "Delivery",
+      "defaultPriority": "HIGH",
+      "template": {
+        "title": "Service Completed & Certificate Issued",
+        "message": "Service delivery for {applicationId} is complete. Your digital certificate is ready for download."
+      }
+    },
+    {
+      "code": "OFFICER_TASK_ASSIGNED",
+      "name": "Officer Task Assigned",
+      "category": "Officer",
+      "defaultPriority": "HIGH",
+      "template": {
+        "title": "New Application in {departmentCode} Queue",
+        "message": "Application {applicationId} ({serviceName}) requires departmental review and document verification."
+      }
+    },
+    {
+      "code": "OFFICER_TASK_UPDATED",
+      "name": "Officer Task Updated",
+      "category": "Officer",
+      "defaultPriority": "NORMAL",
+      "template": {
+        "title": "Application Status Updated: {applicationId}",
+        "message": "Application {applicationId} status updated to {status}."
+      }
+    },
+    {
+      "code": "SYSTEM_ALERT",
+      "name": "System Alert",
+      "category": "System",
+      "defaultPriority": "URGENT",
+      "template": {
+        "title": "System Alert: {title}",
+        "message": "{message}"
+      }
+    }
+  ]
+}

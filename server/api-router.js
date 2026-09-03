@@ -52,6 +52,19 @@ import {
   getVaultAuditLogs,
   VaultError
 } from './vault/index.js';
+import {
+  createNotification,
+  getUserNotifications,
+  getUnreadCount,
+  markAsRead,
+  markAllAsRead,
+  archiveNotification,
+  getPreferences,
+  updatePreferences,
+  getNotificationTypes,
+  safeNotifyApplicationSubmitted,
+  NotificationError
+} from './notifications/index.js';
 
 function readJsonBody(req, maxLimit = 10 * 1024 * 1024) {
   return new Promise((resolve, reject) => {
@@ -391,6 +404,10 @@ export async function handleApiRequest(req, res) {
         status: isDraft ? 'DRAFT' : 'SUBMITTED'
       });
 
+      if (!isDraft) {
+        safeNotifyApplicationSubmitted(application, user).catch(() => {});
+      }
+
       return sendJson(res, 201, {
         success: true,
         message: isDraft ? 'Application draft saved successfully' : 'Application submitted successfully',
@@ -445,6 +462,8 @@ export async function handleApiRequest(req, res) {
       }
 
       const submitted = db.updateApplication(appId, user.id, { status: 'SUBMITTED' });
+      safeNotifyApplicationSubmitted(submitted, user).catch(() => {});
+
       return sendJson(res, 200, {
         success: true,
         message: 'Application submitted successfully',
@@ -1032,6 +1051,108 @@ export async function handleApiRequest(req, res) {
         success: true,
         count: logs.length,
         logs
+      });
+    }
+
+    // ==========================================
+    // PHASE 14 — NOTIFICATION SYSTEM ENDPOINTS
+    // ==========================================
+
+    // 42. GET /api/v1/notifications/types (List Configured Notification Types)
+    if (method === 'GET' && pathname === '/api/v1/notifications/types') {
+      const types = getNotificationTypes();
+      return sendJson(res, 200, {
+        success: true,
+        count: types.length,
+        notificationTypes: types
+      });
+    }
+
+    // 43. GET /api/v1/notifications/unread-count (Get Count of Unread Notifications)
+    if (method === 'GET' && pathname === '/api/v1/notifications/unread-count') {
+      const { user } = authenticateToken(req.headers.authorization);
+      const unreadCount = getUnreadCount(user);
+      return sendJson(res, 200, {
+        success: true,
+        unreadCount
+      });
+    }
+
+    // 44. GET /api/v1/notifications/preferences (Get User Notification Preferences)
+    if (method === 'GET' && pathname === '/api/v1/notifications/preferences') {
+      const { user } = authenticateToken(req.headers.authorization);
+      const preferences = getPreferences(user);
+      return sendJson(res, 200, {
+        success: true,
+        preferences
+      });
+    }
+
+    // 45. PUT /api/v1/notifications/preferences (Update User Notification Preferences)
+    if (method === 'PUT' && pathname === '/api/v1/notifications/preferences') {
+      const { user } = authenticateToken(req.headers.authorization);
+      const body = await readJsonBody(req);
+      const preferences = updatePreferences(user, body);
+      return sendJson(res, 200, {
+        success: true,
+        message: 'Notification preferences updated',
+        preferences
+      });
+    }
+
+    // 46. POST /api/v1/notifications/mark-all-read (Mark All as Read)
+    if (method === 'POST' && pathname === '/api/v1/notifications/mark-all-read') {
+      const { user } = authenticateToken(req.headers.authorization);
+      const result = markAllAsRead(user);
+      return sendJson(res, 200, result);
+    }
+
+    // 47. GET /api/v1/notifications (List Notifications for Authenticated User)
+    if (method === 'GET' && pathname === '/api/v1/notifications') {
+      const { user } = authenticateToken(req.headers.authorization);
+      const filters = {
+        status: url.searchParams.get('status') || 'ALL',
+        type: url.searchParams.get('type') || 'ALL',
+        limit: url.searchParams.get('limit') || '50',
+        offset: url.searchParams.get('offset') || '0'
+      };
+      const result = getUserNotifications(user, filters);
+      return sendJson(res, 200, {
+        success: true,
+        ...result
+      });
+    }
+
+    // 48. POST /api/v1/notifications/:id/read (Mark Single Notification as Read)
+    const notifReadMatch = pathname.match(/^\/api\/v1\/notifications\/([^/]+)\/read$/);
+    if (method === 'POST' && notifReadMatch) {
+      const notifId = notifReadMatch[1];
+      const { user } = authenticateToken(req.headers.authorization);
+      const updated = markAsRead(user, notifId);
+      return sendJson(res, 200, {
+        success: true,
+        notification: updated
+      });
+    }
+
+    // 49. DELETE /api/v1/notifications/:id or POST /archive (Archive Notification)
+    const notifArchiveMatch = pathname.match(/^\/api\/v1\/notifications\/([^/]+)(\/archive)?$/);
+    if ((method === 'DELETE' || method === 'POST') && notifArchiveMatch && !pathname.endsWith('/read')) {
+      const notifId = notifArchiveMatch[1];
+      const { user } = authenticateToken(req.headers.authorization);
+      const result = archiveNotification(user, notifId);
+      return sendJson(res, 200, result);
+    }
+
+    // 50. POST /api/v1/notifications (Create System/Officer Notification)
+    if (method === 'POST' && pathname === '/api/v1/notifications') {
+      const { user } = authenticateToken(req.headers.authorization);
+      requireRole(user, ['OFFICER', 'ADMIN']);
+      const body = await readJsonBody(req);
+      const notification = await createNotification(body);
+      return sendJson(res, 201, {
+        success: true,
+        notification
       });
     }
 

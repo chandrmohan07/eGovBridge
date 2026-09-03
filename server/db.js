@@ -296,6 +296,49 @@ export const vaultDocuments = [
 // 8. Vault Audit Trail Store
 export const vaultAuditLogs = [];
 
+// 9. Centralized Notifications Store (Phase 14 Foundation)
+export const notifications = [
+  {
+    id: 'NOTIF-2026-001',
+    recipientUserId: 'USR-CIT-001',
+    recipientRole: 'CITIZEN',
+    applicationId: 'APP-2026-EDU-8812',
+    type: 'APPLICATION_UNDER_REVIEW',
+    title: 'Orchestration In Progress',
+    message: 'Your Post-Matric Scholarship application is undergoing automated inter-department cross-verification.',
+    status: 'UNREAD',
+    priority: 'NORMAL',
+    category: 'Application',
+    metadata: {
+      departmentCode: 'EDUCATION',
+      serviceName: 'Post-Matric Scholarship for Higher Education'
+    },
+    createdAt: '2026-09-02T14:30:00.000Z',
+    readAt: null
+  },
+  {
+    id: 'NOTIF-2026-002',
+    recipientUserId: 'USR-CIT-001',
+    recipientRole: 'CITIZEN',
+    applicationId: 'APP-2026-REV-4109',
+    type: 'APPLICATION_APPROVED',
+    title: 'Income Certificate Approved',
+    message: 'Your Income Certificate application has been approved and digitally signed by Tehsildar Haveli.',
+    status: 'READ',
+    priority: 'HIGH',
+    category: 'Application',
+    metadata: {
+      departmentCode: 'REVENUE',
+      serviceName: 'Issuance of Income Certificate'
+    },
+    createdAt: '2026-08-18T16:00:00.000Z',
+    readAt: '2026-08-19T09:00:00.000Z'
+  }
+];
+
+// 10. User Notification Preferences Store
+export const notificationPreferences = new Map();
+
 // Helper database functions
 export const db = {
   findUserByEmail(email) {
@@ -304,6 +347,10 @@ export const db = {
 
   findUserById(id) {
     return users.find(u => u.id === id);
+  },
+
+  getUsersByRole(role) {
+    return users.filter(u => u.role === role);
   },
 
   createUser({ email, password, name, phone, state, district }) {
@@ -665,8 +712,75 @@ export const db = {
       logs = logs.slice(0, filter.limit);
     }
     return logs;
+  },
+
+  // --- Notification System Methods (Phase 14) ---
+  getNotifications(recipientUserId, filters = {}) {
+    let list = notifications.filter(n => n.recipientUserId === recipientUserId && n.status !== 'ARCHIVED');
+    if (filters.status && filters.status !== 'ALL') {
+      list = list.filter(n => n.status === filters.status);
+    }
+    if (filters.type && filters.type !== 'ALL') {
+      list = list.filter(n => n.type === filters.type);
+    }
+    return list;
+  },
+
+  getUnreadNotificationsCount(recipientUserId) {
+    return notifications.filter(n => n.recipientUserId === recipientUserId && n.status === 'UNREAD').length;
+  },
+
+  getNotificationById(id) {
+    if (!id) return null;
+    return notifications.find(n => n.id === id) || null;
+  },
+
+  markNotificationAsRead(id, userId) {
+    const notif = this.getNotificationById(id);
+    if (!notif) return null;
+    notif.status = 'READ';
+    notif.readAt = new Date().toISOString();
+    return notif;
+  },
+
+  markAllNotificationsAsRead(recipientUserId) {
+    let updated = 0;
+    const now = new Date().toISOString();
+    for (const notif of notifications) {
+      if (notif.recipientUserId === recipientUserId && notif.status === 'UNREAD') {
+        notif.status = 'READ';
+        notif.readAt = now;
+        updated++;
+      }
+    }
+    return updated;
+  },
+
+  getNotificationPreferences(userId) {
+    if (notificationPreferences.has(userId)) {
+      return notificationPreferences.get(userId);
+    }
+    const defaultPrefs = {
+      inAppEnabled: true,
+      emailEnabled: true,
+      smsEnabled: false
+    };
+    notificationPreferences.set(userId, defaultPrefs);
+    return defaultPrefs;
+  },
+
+  updateNotificationPreferences(userId, prefs = {}) {
+    const current = this.getNotificationPreferences(userId);
+    const updated = { ...current, ...prefs };
+    notificationPreferences.set(userId, updated);
+    return updated;
   }
 };
+
+db.notifications = notifications;
+db.notificationPreferences = notificationPreferences;
+db.vaultDocuments = vaultDocuments;
+db.vaultAuditLogs = vaultAuditLogs;
 
 // 6. Canonical Government Service Catalog (Phase 4 Foundation)
 export const SERVICES = [

@@ -7,6 +7,13 @@
 import crypto from 'node:crypto';
 import { db } from '../db.js';
 import { TASK_STATUS, ORCHESTRATION_STATUS, updateTaskDependencies, computeOrchestrationStatus } from '../orchestrator.js';
+import {
+  safeNotifyOfficerClaim,
+  safeNotifyClarificationRequested,
+  safeNotifyApplicationApproved,
+  safeNotifyApplicationRejected,
+  safeNotifyApplicationCompleted
+} from '../notifications/index.js';
 
 export class OfficerWorkflowError extends Error {
   constructor(message, statusCode = 400, code = 'WORKFLOW_ERROR') {
@@ -191,6 +198,8 @@ export function claimApplication(officer, applicationId, expectedVersion = null)
     description: `Application claimed for review by ${officer.name} (${officer.departmentCode}).`
   });
 
+  safeNotifyOfficerClaim(app, officer).catch(() => {});
+
   return app;
 }
 
@@ -270,6 +279,8 @@ export function requestClarification(officer, applicationId, { requestedInfo, re
     timestamp: now,
     description: `Officer requested clarification: ${reason.trim()}`
   });
+
+  safeNotifyClarificationRequested(app, clarification, officer).catch(() => {});
 
   return { app, clarification };
 }
@@ -359,6 +370,8 @@ export function approveApplication(officer, applicationId, { remarks = '' } = {}
     }
   }
 
+  safeNotifyApplicationApproved(app, officer, remarks).catch(() => {});
+
   return app;
 }
 
@@ -419,6 +432,8 @@ export function rejectApplication(officer, applicationId, { reason, remarks = ''
     }
   }
 
+  safeNotifyApplicationRejected(app, officer, reason).catch(() => {});
+
   return app;
 }
 
@@ -448,6 +463,8 @@ export function completeApplication(officer, applicationId, { certificateUrl = n
     timestamp: now,
     description: `Service delivery fulfilled and closed by ${officer.name}. ${remarks}`
   });
+
+  safeNotifyApplicationCompleted(app, officer, certificateUrl).catch(() => {});
 
   return app;
 }

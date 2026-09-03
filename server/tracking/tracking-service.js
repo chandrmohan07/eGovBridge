@@ -7,6 +7,7 @@
 import crypto from 'node:crypto';
 import { db } from '../db.js';
 import { ensureWorkflowFields } from '../officer/officer-workflow.js';
+import { safeNotifyClarificationSubmitted } from '../notifications/index.js';
 
 export class TrackingError extends Error {
   constructor(message, statusCode = 400, code = 'TRACKING_ERROR') {
@@ -218,6 +219,8 @@ export function respondToClarification(user, applicationId, { clarificationId, r
     timestamp: now,
     description: `Citizen submitted clarification: "${responseMessage.trim().slice(0, 100)}..."`
   });
+
+  safeNotifyClarificationSubmitted(app, user, responseMessage).catch(() => {});
 
   return {
     success: true,
