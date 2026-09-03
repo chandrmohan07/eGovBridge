@@ -19,6 +19,7 @@ import { renderOfficerWorkspace } from './components/OfficerWorkspace.js';
 import { renderAdminPortal } from './components/AdminPortal.js';
 import { renderAccessDenied } from './components/AccessDenied.js';
 import { renderServiceDetails } from './components/ServiceDetails.js';
+import { renderApplicationWorkflow } from './components/ApplicationWorkflow.js';
 
 class App {
   constructor() {
@@ -324,20 +325,250 @@ class App {
     this.navigate('dashboard');
   }
 
-  // Service Application placeholder (Phase 4 -> Phase 5 Entry Point)
-  openApplyPlaceholder(serviceId) {
-    const service = this.store.services.find(s => s.id === serviceId);
-    if (!service) return;
+  // --- Phase 5: Unified Application Workflow Handlers ---
+  startApplication(serviceId) {
+    if (!this.store.isAuthenticated) {
+      this.openAuthModal('login');
+      alert('Please sign in to your citizen account before starting an application.');
+      return;
+    }
 
-    alert(
-      `[START APPLICATION — Unified Application Workflow Entry Point]\n\n` +
-      `Service: ${service.title} (${service.id})\n` +
-      `Department: ${service.department} (${service.departmentCode})\n` +
-      `Estimated Turnaround: ${service.turnaroundTime}\n` +
-      `Application Fee: ${service.fee || 'Free'}\n` +
-      `Required Documents:\n• ${service.requiredDocuments.join('\n• ')}\n\n` +
-      `Notice: Phase 4 has verified service eligibility and catalog discovery. In Phase 5 (Unified Application Workflow), this button will launch the single-entry submission form with automated inter-department document verification.`
-    );
+    const service = this.store.services.find(s => s.id === serviceId);
+    if (!service) {
+      alert(`Service not found for ID: ${serviceId}`);
+      return;
+    }
+
+    const user = this.store.currentUser || {};
+    this.store.activeApplicationDraft = {
+      serviceId: service.id,
+      service,
+      step: 1,
+      formData: {
+        fullName: user.name || 'Rahul Verma',
+        email: user.email || 'citizen@example.com',
+        phone: user.phone || '+91 98765 43210',
+        aadhaarMasked: user.aadhaarMasked || 'XXXX-XXXX-4819',
+        address: 'Flat 402, Green Meadows Apartment, Shivaji Nagar',
+        state: user.state || 'Maharashtra',
+        district: user.district || 'Pune',
+        // Default placeholders for service fields
+        annualIncome: '180000',
+        institution: 'Pune University / Government Engineering College',
+        course: 'B.Tech Computer Science & Engineering',
+        previousMarks: '84.50',
+        occupation: 'Service / Salaried',
+        purpose: `Application for ${service.title}`,
+        rationCardNumber: 'MH-NFSA-2849102',
+        familyMembersCount: '4',
+        licenseNumber: 'MH12-20180094182',
+        expiryDate: '2026-06-30'
+      },
+      documents: [
+        {
+          name: service.requiredDocuments && service.requiredDocuments[0] ? service.requiredDocuments[0] : 'Identity Document',
+          fileName: 'aadhaar_digilocker_verified.pdf',
+          fileType: 'application/pdf',
+          fileSize: 345000,
+          uploadDate: new Date().toISOString(),
+          status: 'DigiLocker Linked'
+        }
+      ],
+      errors: [],
+      submittedApp: null
+    };
+
+    this.store.activeTab = 'application-workflow';
+    this.render();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  openApplyPlaceholder(serviceId) {
+    this.startApplication(serviceId);
+  }
+
+  goToApplicationStep(stepNum) {
+    if (this.store.activeApplicationDraft) {
+      this.store.activeApplicationDraft.step = stepNum;
+      this.store.activeApplicationDraft.errors = [];
+      this.render();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  handleStep1Submit(event) {
+    event.preventDefault();
+    if (!this.store.activeApplicationDraft) return;
+
+    const form = event.target;
+    const data = new FormData(form);
+    for (const [key, val] of data.entries()) {
+      this.store.activeApplicationDraft.formData[key] = val;
+    }
+
+    this.store.activeApplicationDraft.step = 2;
+    this.store.activeApplicationDraft.errors = [];
+    this.render();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  handleStep2Submit(event) {
+    event.preventDefault();
+    if (!this.store.activeApplicationDraft) return;
+
+    const form = event.target;
+    const data = new FormData(form);
+    for (const [key, val] of data.entries()) {
+      this.store.activeApplicationDraft.formData[key] = val;
+    }
+
+    this.store.activeApplicationDraft.step = 3;
+    this.store.activeApplicationDraft.errors = [];
+    this.render();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  handleDocumentUpload(docName, fileInput) {
+    const file = fileInput.files && fileInput.files[0];
+    if (!file) return;
+
+    // Validate extension
+    const allowedExts = ['.pdf', '.jpg', '.jpeg', '.png'];
+    const lowerName = file.name.toLowerCase();
+    const hasAllowed = allowedExts.some(ext => lowerName.endsWith(ext));
+    if (!hasAllowed) {
+      alert('Invalid file format. Please upload only PDF, JPG, or PNG files.');
+      return;
+    }
+
+    // Validate size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      alert(`File size exceeds 5MB limit (${(file.size / (1024 * 1024)).toFixed(2)} MB).`);
+      return;
+    }
+
+    if (!this.store.activeApplicationDraft.documents) {
+      this.store.activeApplicationDraft.documents = [];
+    }
+
+    // Remove old document with same name if any
+    this.store.activeApplicationDraft.documents = this.store.activeApplicationDraft.documents.filter(d => d.name !== docName);
+
+    // Add new document
+    this.store.activeApplicationDraft.documents.push({
+      name: docName,
+      fileName: file.name,
+      fileType: file.type || 'application/octet-stream',
+      fileSize: file.size,
+      uploadDate: new Date().toISOString(),
+      status: 'Uploaded'
+    });
+
+    this.render();
+  }
+
+  removeDocument(docName) {
+    if (this.store.activeApplicationDraft && this.store.activeApplicationDraft.documents) {
+      this.store.activeApplicationDraft.documents = this.store.activeApplicationDraft.documents.filter(d => d.name !== docName);
+      this.render();
+    }
+  }
+
+  async saveApplicationDraft() {
+    if (!this.store.activeApplicationDraft) return;
+
+    const draft = this.store.activeApplicationDraft;
+    const payload = {
+      serviceId: draft.serviceId,
+      formData: draft.formData,
+      documents: draft.documents,
+      status: 'DRAFT'
+    };
+
+    try {
+      const res = await fetch('/api/v1/applications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.store.token || 'demo-citizen-token'}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        alert('💾 Application draft saved successfully! You can resume from your dashboard at any time.');
+      } else {
+        alert(`Draft save notice: ${data.error || (data.errors && data.errors.join(', ')) || 'Saved locally'}`);
+      }
+    } catch (e) {
+      alert('💾 Draft saved locally in your current browser session.');
+    }
+  }
+
+  async submitFinalApplication() {
+    const consentBox = document.getElementById('declarationConsent');
+    if (consentBox && !consentBox.checked) {
+      alert('Please check the consent declaration checkbox to proceed with submission.');
+      return;
+    }
+
+    const draft = this.store.activeApplicationDraft;
+    const payload = {
+      serviceId: draft.serviceId,
+      formData: draft.formData,
+      documents: draft.documents,
+      status: 'SUBMITTED'
+    };
+
+    try {
+      const res = await fetch('/api/v1/applications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.store.token || 'demo-citizen-token'}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        draft.submittedApp = data.application;
+        draft.step = 5;
+        this.store.myApplications.unshift(data.application);
+        this.render();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        draft.errors = data.errors || [data.error || 'Submission failed'];
+        draft.step = 4;
+        this.render();
+      }
+    } catch (e) {
+      // Offline fallback: generate mock application record
+      const randSuffix = Math.floor(1000 + Math.random() * 9000);
+      const mockApp = {
+        id: `APP-2026-${draft.service.departmentCode.slice(0, 3)}-${randSuffix}`,
+        serviceId: draft.serviceId,
+        serviceName: draft.service.title,
+        departmentCode: draft.service.departmentCode,
+        status: 'SUBMITTED',
+        submittedAt: new Date().toISOString(),
+        formData: draft.formData,
+        documents: draft.documents
+      };
+      draft.submittedApp = mockApp;
+      draft.step = 5;
+      this.store.myApplications.unshift(mockApp);
+      this.render();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  cancelApplication() {
+    if (confirm('Are you sure you want to exit the application? Any unsaved progress will be lost.')) {
+      this.store.activeApplicationDraft = null;
+      this.navigate('services');
+    }
   }
 
   // AI Chat Handlers
@@ -632,6 +863,8 @@ class App {
         return renderAccessDenied(this.store, this.store.deniedAttemptedTab);
       case 'service-details':
         return renderServiceDetails(this.store, this.store.activeServiceDetailsId);
+      case 'application-workflow':
+        return renderApplicationWorkflow(this.store);
       default:
         return renderDashboardSummary(this.store);
     }

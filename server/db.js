@@ -296,6 +296,83 @@ export const db = {
     return departmentalApplications.filter(a => a.departmentCode === departmentCode);
   },
 
+  createApplication({ applicantId, applicantName, serviceId, formData = {}, documents = [], status = 'SUBMITTED' }) {
+    const service = this.getServiceById(serviceId);
+    if (!service) {
+      throw new Error(`Service not found with ID: ${serviceId}`);
+    }
+
+    const deptPrefix = service.departmentCode ? service.departmentCode.slice(0, 3) : 'GEN';
+    const randSuffix = crypto.randomBytes(3).toString('hex').toUpperCase();
+    const id = `APP-2026-${deptPrefix}-${randSuffix}`;
+    const now = new Date().toISOString();
+
+    const newApp = {
+      id,
+      applicantId,
+      applicantName: applicantName || 'Citizen Applicant',
+      serviceId: service.id,
+      serviceName: service.title,
+      departmentId: service.departmentId,
+      departmentCode: service.departmentCode,
+      status: status || 'SUBMITTED',
+      formData: { ...formData },
+      documents: Array.isArray(documents) ? [...documents] : [],
+      createdAt: now,
+      updatedAt: now,
+      submittedAt: status === 'SUBMITTED' ? now : null,
+      submittedDate: now.slice(0, 10),
+      currentStage: status === 'SUBMITTED' ? 'Application Submitted & Awaiting Processing' : 'Draft in Progress',
+      amount: formData.amount || service.fee || 'N/A'
+    };
+
+    departmentalApplications.push(newApp);
+    return newApp;
+  },
+
+  updateApplication(id, applicantId, { formData, documents, status } = {}) {
+    const app = this.getApplicationById(id);
+    if (!app) {
+      const err = new Error(`Application not found with ID: ${id}`);
+      err.statusCode = 404;
+      throw err;
+    }
+
+    if (app.applicantId !== applicantId) {
+      const err = new Error('Access Denied: You do not own this application');
+      err.statusCode = 403;
+      throw err;
+    }
+
+    const now = new Date().toISOString();
+    if (formData) {
+      app.formData = { ...app.formData, ...formData };
+    }
+    if (documents) {
+      app.documents = Array.isArray(documents) ? [...documents] : app.documents;
+    }
+    if (status) {
+      app.status = status;
+      if (status === 'SUBMITTED' && !app.submittedAt) {
+        app.submittedAt = now;
+        app.submittedDate = now.slice(0, 10);
+        app.currentStage = 'Application Submitted & Awaiting Processing';
+      }
+    }
+    app.updatedAt = now;
+    return app;
+  },
+
+  getApplicationById(id) {
+    if (!id) return null;
+    return departmentalApplications.find(a => a.id.toLowerCase() === id.toLowerCase().trim()) || null;
+  },
+
+  getCitizenApplications(applicantId) {
+    if (!applicantId) return [];
+    return departmentalApplications.filter(a => a.applicantId === applicantId);
+  },
+
   getAllUsersSafe() {
     return users.map(({ passwordHash, salt, ...safeUser }) => safeUser);
   },

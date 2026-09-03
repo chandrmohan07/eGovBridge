@@ -5,6 +5,7 @@
 
 import { register, login, logout, authenticateToken, requireRole, requireDepartmentScope, AuthError } from './auth.js';
 import { db } from './db.js';
+import { validateApplicationPayload, validateDocument } from './validation.js';
 
 function readJsonBody(req) {
   return new Promise((resolve, reject) => {
@@ -166,6 +167,145 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, 200, {
         success: true,
         categories
+      });
+    }
+
+    // 12. POST /api/v1/applications (Create Draft or Submit Application)
+    if (method === 'POST' && pathname === '/api/v1/applications') {
+      const { user } = authenticateToken(req.headers.authorization);
+      const body = await readJsonBody(req);
+      const { serviceId, formData = {}, documents = [], status = 'SUBMITTED' } = body;
+
+      if (!serviceId) {
+        return sendJson(res, 400, { success: false, error: 'Service ID is required' });
+      }
+
+      const service = db.getServiceById(serviceId);
+      if (!service) {
+        return sendJson(res, 404, { success: false, error: `Service not found with ID: ${serviceId}` });
+      }
+
+      const isDraft = status === 'DRAFT';
+      const validation = validateApplicationPayload({ service, formData, documents, isDraft });
+      if (!validation.isValid) {
+        return sendJson(res, 400, { success: false, errors: validation.errors });
+      }
+
+      // Enforce citizen ownership from authenticated user token context
+      const application = db.createApplication({
+        applicantId: user.id,
+        applicantName: user.name || formData.fullName,
+        serviceId,
+        formData,
+        documents,
+        status: isDraft ? 'DRAFT' : 'SUBMITTED'
+      });
+
+      return sendJson(res, 201, {
+        success: true,
+        message: isDraft ? 'Application draft saved successfully' : 'Application submitted successfully',
+        application
+      });
+    }
+
+    // 13. GET /api/v1/applications (List Applications for Authenticated User)
+    if (method === 'GET' && pathname === '/api/v1/applications') {
+      const { user } = authenticateToken(req.headers.authorization);
+      let applications = [];
+
+      if (user.role === 'CITIZEN') {
+        applications = db.getCitizenApplications(user.id);
+      } else if (user.role === 'OFFICER') {
+        applications = db.getDepartmentalApplications(user.departmentCode);
+      } else if (user.role === 'ADMIN') {
+        applications = db.getAllDepartments ? db.getDepartmentalApplications('EDUCATION').concat(db.getDepartmentalApplications('REVENUE')) : [];
+      }
+
+      return sendJson(res, 200, {
+        success: true,
+        count: applications.length,
+        applications
+      });
+    }
+
+    // 14. POST /api/v1/applications/:id/submit (Submit an existing Draft)
+    const appSubmitMatch = pathname.match(/^\/api\/v1\/applications\/([^/]+)\/submit$/);
+    if (method === 'POST' && appSubmitMatch) {
+      const appId = appSubmitMatch[1];
+      const { user } = authenticateToken(req.headers.authorization);
+      const app = db.getApplicationById(appId);
+
+      if (!app) {
+        return sendJson(res, 404, { success: false, error: `Application not found with ID: ${appId}` });
+      }
+
+      if (app.applicantId !== user.id) {
+        return sendJson(res, 403, { success: false, error: 'Access Denied: You do not own this application' });
+      }
+
+      const service = db.getServiceById(app.serviceId);
+      const validation = validateApplicationPayload({ service, formData: app.formData, documents: app.documents, isDraft: false });
+      if (!validation.isValid) {
+        return sendJson(res, 400, { success: false, errors: validation.errors });
+      }
+
+      const submitted = db.updateApplication(appId, user.id, { status: 'SUBMITTED' });
+      return sendJson(res, 200, {
+        success: true,
+        message: 'Application submitted successfully',
+        application: submitted
+      });
+    }
+
+    // 15. GET /api/v1/applications/:id (Retrieve Single Application)
+    const appGetMatch = pathname.match(/^\/api\/v1\/applications\/([^/]+)$/);
+    if (method === 'GET' && appGetMatch) {
+      const appId = appGetMatch[1];
+      const { user } = authenticateToken(req.headers.authorization);
+      const app = db.getApplicationById(appId);
+
+      if (!app) {
+        return sendJson(res, 404, { success: false, error: `Application not found with ID: ${appId}` });
+      }
+
+      // Enforce Role & Ownership checks
+      if (user.role === 'CITIZEN' && app.applicantId !== user.id) {
+        return sendJson(res, 403, { success: false, error: 'Access Denied: You do not have permission to view this application' });
+      }
+      if (user.role === 'OFFICER' && app.departmentCode !== user.departmentCode) {
+        return sendJson(res, 403, { success: false, error: 'Access Denied: Officer cannot access applications outside assigned department' });
+      }
+
+      return sendJson(res, 200, {
+        success: true,
+        application: app
+      });
+    }
+
+    // 16. PUT /api/v1/applications/:id (Update an existing Draft)
+    if (method === 'PUT' && appGetMatch) {
+      const appId = appGetMatch[1];
+      const { user } = authenticateToken(req.headers.authorization);
+      const app = db.getApplicationById(appId);
+
+      if (!app) {
+        return sendJson(res, 404, { success: false, error: `Application not found with ID: ${appId}` });
+      }
+
+      if (app.applicantId !== user.id) {
+        return sendJson(res, 403, { success: false, error: 'Access Denied: You do not own this application' });
+      }
+
+      if (app.status === 'SUBMITTED') {
+        return sendJson(res, 400, { success: false, error: 'Cannot modify an already submitted application' });
+      }
+
+      const body = await readJsonBody(req);
+      const updated = db.updateApplication(appId, user.id, body);
+      return sendJson(res, 200, {
+        success: true,
+        message: 'Application draft updated successfully',
+        application: updated
       });
     }
 

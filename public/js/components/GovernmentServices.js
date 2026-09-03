@@ -226,7 +226,7 @@ export function renderGovernmentServices(store) {
                   <button class="btn btn-outline btn-sm" onclick="window.app.viewServiceDetails('${service.id}')">
                     View Details
                   </button>
-                  <button class="btn btn-primary btn-sm" onclick="window.app.openApplyPlaceholder('${service.id}')">
+                  <button class="btn btn-primary btn-sm" onclick="window.app.startApplication('${service.id}')">
                     Start Application
                   </button>
                 </div>

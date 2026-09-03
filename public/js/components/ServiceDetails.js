@@ -53,7 +53,7 @@ export function renderServiceDetails(store, serviceId) {
 
           <!-- Primary Start Application Action -->
           <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
-            <button class="btn btn-primary" style="padding: 10px 24px; font-size: 15px; font-weight: 600;" onclick="window.app.openApplyPlaceholder('${service.id}')">
+            <button class="btn btn-primary" style="padding: 10px 24px; font-size: 15px; font-weight: 600;" onclick="window.app.startApplication('${service.id}')">
               🚀 Start Application
             </button>
             <span style="font-size: 11px; color: var(--text-muted);">Unified Digital Single-Entry</span>
@@ -153,7 +153,7 @@ export function renderServiceDetails(store, serviceId) {
           <button class="btn btn-outline" onclick="window.app.navigate('services')">
             ← Explore Other Services
           </button>
-          <button class="btn btn-primary" onclick="window.app.openApplyPlaceholder('${service.id}')">
+          <button class="btn btn-primary" onclick="window.app.startApplication('${service.id}')">
             🚀 Start Application
           </button>
         </div>

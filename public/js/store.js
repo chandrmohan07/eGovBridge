@@ -12,6 +12,10 @@ export const store = {
   activeServiceDetailsId: null,
   activeServiceDetails: null,
 
+  // Unified Application Workflow State (Phase 5)
+  activeApplicationDraft: null,
+  myApplications: [],
+
   // Authentication & RBAC State (Phase 3)
   token: null,
   isAuthenticated: true,
