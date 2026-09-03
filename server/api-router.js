@@ -17,6 +17,11 @@ import {
   normalizeDepartmentPayload,
   transformCanonicalToDepartment
 } from './standardization/index.js';
+import {
+  dataExchangeService,
+  EXCHANGE_POLICIES,
+  EXCHANGE_STATUS
+} from './exchange/index.js';
 
 function readJsonBody(req) {
   return new Promise((resolve, reject) => {
@@ -603,6 +608,112 @@ export async function handleApiRequest(req, res) {
         success: true,
         targetDepartment,
         data: transformed
+      });
+    }
+
+    // 29. GET /api/v1/exchange/policies
+    if (method === 'GET' && pathname === '/api/v1/exchange/policies') {
+      return sendJson(res, 200, {
+        success: true,
+        policies: EXCHANGE_POLICIES
+      });
+    }
+
+    // 30. POST /api/v1/exchange/requests (Initiate Data Exchange Request)
+    if (method === 'POST' && pathname === '/api/v1/exchange/requests') {
+      const { user } = authenticateToken(req.headers.authorization);
+      const body = await readJsonBody(req);
+
+      const exchange = dataExchangeService.createExchangeRequest({
+        sourceDepartment: body.sourceDepartment,
+        targetDepartment: body.targetDepartment,
+        applicationId: body.applicationId,
+        citizenId: user.role === 'CITIZEN' ? user.id : body.citizenId,
+        purpose: body.purpose,
+        requestedFields: body.requestedFields,
+        citizenConsentGiven: body.citizenConsentGiven !== undefined ? body.citizenConsentGiven : true,
+        requestId: req.requestId
+      });
+
+      const statusCode = exchange.status === EXCHANGE_STATUS.AUTHORIZED ? 201 : 403;
+      return sendJson(res, statusCode, {
+        success: exchange.status === EXCHANGE_STATUS.AUTHORIZED,
+        exchange
+      });
+    }
+
+    // 31. GET /api/v1/exchange/requests/:id (Retrieve Exchange Details)
+    const exchangeGetMatch = pathname.match(/^\/api\/v1\/exchange\/requests\/([^/]+)$/);
+    if (method === 'GET' && exchangeGetMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      const exchangeId = exchangeGetMatch[1];
+      const exchange = dataExchangeService.getExchangeById(exchangeId);
+
+      if (!exchange) {
+        return sendJson(res, 404, { success: false, error: `Data exchange request not found: ${exchangeId}` });
+      }
+
+      // Security / RBAC check
+      if (user.role === 'CITIZEN') {
+        const app = db.getApplicationById(exchange.applicationId);
+        if (exchange.citizenId !== user.id && (!app || app.applicantId !== user.id)) {
+          return sendJson(res, 403, { success: false, error: 'Access Denied: You do not have permission to view this exchange' });
+        }
+      } else if (user.role === 'OFFICER') {
+        if (exchange.sourceDepartment !== user.departmentCode && exchange.targetDepartment !== user.departmentCode) {
+          return sendJson(res, 403, { success: false, error: 'Access Denied: Officer can only access exchanges involving assigned department' });
+        }
+      }
+
+      return sendJson(res, 200, {
+        success: true,
+        exchange
+      });
+    }
+
+    // 32. POST /api/v1/exchange/requests/:id/execute (Execute Transfer)
+    const exchangeExecMatch = pathname.match(/^\/api\/v1\/exchange\/requests\/([^/]+)\/execute$/);
+    if (method === 'POST' && exchangeExecMatch) {
+      const { user } = authenticateToken(req.headers.authorization);
+      const exchangeId = exchangeExecMatch[1];
+      const exchange = dataExchangeService.getExchangeById(exchangeId);
+
+      if (!exchange) {
+        return sendJson(res, 404, { success: false, error: `Data exchange request not found: ${exchangeId}` });
+      }
+
+      // RBAC: Officers or Admins can trigger execution
+      if (user.role === 'OFFICER' && exchange.sourceDepartment !== user.departmentCode && exchange.targetDepartment !== user.departmentCode) {
+        return sendJson(res, 403, { success: false, error: 'Access Denied: Unauthorized to execute this exchange' });
+      }
+
+      const body = await readJsonBody(req);
+      const result = await dataExchangeService.executeExchange(exchangeId, {
+        requestId: req.requestId,
+        sourceData: body.sourceData,
+        simulateTimeout: body.simulateTimeout,
+        simulateDownstreamFailure: body.simulateDownstreamFailure,
+        failureReason: body.failureReason
+      });
+
+      return sendJson(res, 200, result);
+    }
+
+    // 33. GET /api/v1/exchange/audit (Retrieve Exchange Audit Logs)
+    if (method === 'GET' && pathname === '/api/v1/exchange/audit') {
+      const { user } = authenticateToken(req.headers.authorization);
+      requireRole(user, ['OFFICER', 'ADMIN']);
+
+      const filter = {};
+      if (user.role === 'OFFICER') {
+        filter.department = user.departmentCode;
+      }
+      const logs = dataExchangeService.getAuditLogs(filter);
+
+      return sendJson(res, 200, {
+        success: true,
+        count: logs.length,
+        logs
       });
     }
 
