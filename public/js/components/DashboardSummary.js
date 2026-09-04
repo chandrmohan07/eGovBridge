@@ -153,28 +153,51 @@ export function renderDashboardSummary(store) {
           <button class="btn btn-secondary btn-sm" onclick="window.app.navigate('services')">View All Services →</button>
         </div>
 
-        <div class="cards-grid">
-          ${store.services.slice(0, 3).map(service => `
-            <div class="service-card">
-              <div>
-                <div class="service-card-top">
-                  <span class="service-dept">${service.department}</span>
-                  <span class="badge badge-mock">${service.integrationStatus}</span>
-                </div>
-                <h4 class="service-card-title">${service.title}</h4>
-                <p class="service-card-desc">${service.description}</p>
-                <div class="service-tags">
-                  ${service.requiredDocuments.slice(0, 3).map(doc => `<span class="badge badge-neutral">${doc}</span>`).join('')}
-                </div>
-              </div>
-              <div class="service-card-footer">
-                <span class="service-tat">⏱️ ${service.turnaroundTime}</span>
-                <button class="btn btn-primary btn-sm" onclick="window.app.openApplyPlaceholder('${service.id}')">Apply Now</button>
-              </div>
-            </div>
-          `).join('')}
+        <div class="cards-grid" id="dashboardServicesGrid">
+          ${renderDashboardServicesCards(store)}
         </div>
       </div>
     </div>
   `;
+}
+
+export function renderDashboardServicesCards(store) {
+  const query = (store.searchQuery || '').toLowerCase().trim();
+  const displayedServices = query 
+    ? store.services.filter(s => 
+        s.title.toLowerCase().includes(query) || 
+        s.category.toLowerCase().includes(query) || 
+        s.description.toLowerCase().includes(query) ||
+        s.department.toLowerCase().includes(query) ||
+        (s.keywords && s.keywords.some(k => k.toLowerCase().includes(query)))
+      )
+    : store.services.slice(0, 3);
+
+  if (displayedServices.length === 0) {
+    return `
+      <div style="grid-column: 1 / -1; padding: 24px; text-align: center; color: var(--text-muted); background: #ffffff; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+        No services found matching "${store.searchQuery}".
+      </div>
+    `;
+  }
+
+  return displayedServices.map(service => `
+    <div class="service-card">
+      <div>
+        <div class="service-card-top">
+          <span class="service-dept">${service.department}</span>
+          <span class="badge badge-mock">${service.integrationStatus}</span>
+        </div>
+        <h4 class="service-card-title">${service.title}</h4>
+        <p class="service-card-desc">${service.description}</p>
+        <div class="service-tags">
+          ${service.requiredDocuments.slice(0, 3).map(doc => `<span class="badge badge-neutral">${doc}</span>`).join('')}
+        </div>
+      </div>
+      <div class="service-card-footer">
+        <span class="service-tat">⏱️ ${service.turnaroundTime}</span>
+        <button class="btn btn-primary btn-sm" onclick="window.app.openApplyPlaceholder('${service.id}')">Apply Now</button>
+      </div>
+    </div>
+  `).join('');
 }

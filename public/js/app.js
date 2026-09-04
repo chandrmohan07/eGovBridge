@@ -4,8 +4,8 @@
  */
 
 import { store } from './store.js';
-import { renderDashboardSummary } from './components/DashboardSummary.js';
-import { renderGovernmentServices } from './components/GovernmentServices.js';
+import { renderDashboardSummary, renderDashboardServicesCards } from './components/DashboardSummary.js';
+import { renderGovernmentServices, renderGovernmentServicesCards } from './components/GovernmentServices.js';
 import { renderApplicationTracking } from './components/ApplicationTracking.js';
 import { renderAIHelp } from './components/AIHelp.js';
 import { renderEmploymentHub } from './components/EmploymentHub.js';
@@ -127,81 +127,107 @@ class App {
   setSearch(query) {
     this.store.searchQuery = query;
 
+    // Synchronize both search inputs if called programmatically or from the other input
     const activeEl = document.activeElement;
-    const isGlobalSearch = activeEl && activeEl.id === 'globalSearchInput';
-    const cursorStart = activeEl && 'selectionStart' in activeEl ? activeEl.selectionStart : null;
-    const cursorEnd = activeEl && 'selectionEnd' in activeEl ? activeEl.selectionEnd : null;
-
-    // If searching from a tab that doesn't display search results, switch to services
-    const searchableTabs = ['services', 'schemes', 'scholarships', 'employment', 'news', 'tracking'];
-    let tabSwitched = false;
-    if (query && !searchableTabs.includes(this.store.activeTab)) {
-      this.store.activeTab = 'services';
-      tabSwitched = true;
-    }
-
-    if (tabSwitched) {
-      const navItems = document.querySelectorAll('.sidebar-nav .nav-item');
-      navItems.forEach(item => {
-        const onclick = item.getAttribute('onclick') || '';
-        if (onclick.includes("'services'")) {
-          item.classList.add('active');
-        } else {
-          item.classList.remove('active');
-        }
-      });
-    }
-
-    // Targeted DOM update: Only re-render the page container (#mainContent).
-    // The top-header and #globalSearchInput remain permanently mounted in the DOM,
-    // retaining native browser focus and caret position without interruption!
-    const mainContent = document.getElementById('mainContent');
-    if (mainContent) {
-      mainContent.innerHTML = this.renderActiveSection();
-    } else {
-      this.render();
-    }
-
-    // Synchronize global search input value if called programmatically
     const globalInput = document.getElementById('globalSearchInput');
     if (globalInput && globalInput !== activeEl && globalInput.value !== query) {
       globalInput.value = query;
     }
+    const catalogInput = document.getElementById('catalogSearchInput');
+    if (catalogInput && catalogInput !== activeEl && catalogInput.value !== query) {
+      catalogInput.value = query;
+    }
 
-    // Defensive focus retention for global search input across all browser engines
-    if (isGlobalSearch && globalInput) {
-      if (document.activeElement !== globalInput) {
-        globalInput.focus();
-      }
-      if (cursorStart !== null && cursorEnd !== null && 'setSelectionRange' in globalInput) {
-        try {
-          globalInput.setSelectionRange(cursorStart, cursorEnd);
-        } catch (_) {}
+    // 1. If currently on dashboard, update only the dashboard services cards grid (zero header or shell re-render)
+    if (this.store.activeTab === 'dashboard') {
+      const dashboardGrid = document.getElementById('dashboardServicesGrid');
+      if (dashboardGrid) {
+        dashboardGrid.innerHTML = renderDashboardServicesCards(this.store);
+        return;
       }
     }
 
-    // If typing inside an in-page search input (inside #mainContent), restore its focus
-    if (activeEl && !isGlobalSearch) {
-      const newInPageSearch = document.querySelector('#mainContent input[placeholder*="Search" i], #mainContent .search-input');
-      if (newInPageSearch) {
-        newInPageSearch.focus();
-        if (cursorStart !== null && cursorEnd !== null && 'setSelectionRange' in newInPageSearch) {
-          try { newInPageSearch.setSelectionRange(cursorStart, cursorEnd); } catch (_) {}
+    // 2. If currently on services catalog, update only the services cards container
+    if (this.store.activeTab === 'services') {
+      const servicesContainer = document.getElementById('servicesCardsContainer');
+      if (servicesContainer) {
+        servicesContainer.innerHTML = renderGovernmentServicesCards(this.store);
+        const countBadge = document.getElementById('servicesCountBadge');
+        if (countBadge) {
+          const count = this.getFilteredServicesCount();
+          countBadge.textContent = `${count} of ${this.store.services.length} Services`;
+        }
+        return;
+      }
+    }
+
+    // 3. For any other searchable section (schemes, scholarships, employment, news, tracking), update main content
+    const mainContent = document.getElementById('mainContent');
+    if (mainContent) {
+      mainContent.innerHTML = this.renderActiveSection();
+    }
+  }
+
+  getFilteredServicesCount() {
+    const query = (this.store.searchQuery || '').toLowerCase().trim();
+    const selectedCat = this.store.selectedCategory || 'all';
+    const selectedDept = this.store.selectedDepartment || 'all';
+    const selectedAvail = this.store.selectedAvailability || 'all';
+    return this.store.services.filter(s => {
+      if (selectedCat !== 'all' && s.category.toLowerCase() !== selectedCat.toLowerCase()) return false;
+      if (selectedDept !== 'all' && 
+          s.departmentCode.toLowerCase() !== selectedDept.toLowerCase() &&
+          s.department.toLowerCase() !== selectedDept.toLowerCase()) {
+        return false;
+      }
+      if (selectedAvail !== 'all' && s.applicationAvailability.toLowerCase() !== selectedAvail.toLowerCase()) return false;
+      if (query) {
+        const matchName = s.title.toLowerCase().includes(query);
+        const matchDesc = s.description.toLowerCase().includes(query);
+        const matchDept = s.department.toLowerCase().includes(query);
+        const matchCat = s.category.toLowerCase().includes(query);
+        const matchElig = s.eligibility.toLowerCase().includes(query);
+        const matchDocs = s.requiredDocuments.some(d => d.toLowerCase().includes(query));
+        const matchKey = s.keywords && s.keywords.some(k => k.toLowerCase().includes(query));
+        if (!matchName && !matchDesc && !matchDept && !matchCat && !matchElig && !matchDocs && !matchKey) {
+          return false;
         }
       }
-    }
+      return true;
+    }).length;
   }
 
   resetSearch() {
     this.store.searchQuery = '';
     this.store.selectedCategory = 'all';
-    const searchInput = document.getElementById('globalSearchInput');
-    if (searchInput) searchInput.value = '';
+    const globalInput = document.getElementById('globalSearchInput');
+    if (globalInput) globalInput.value = '';
+    const catalogInput = document.getElementById('catalogSearchInput');
+    if (catalogInput) catalogInput.value = '';
+
+    if (this.store.activeTab === 'dashboard') {
+      const dashboardGrid = document.getElementById('dashboardServicesGrid');
+      if (dashboardGrid) {
+        dashboardGrid.innerHTML = renderDashboardServicesCards(this.store);
+        return;
+      }
+    }
+
+    if (this.store.activeTab === 'services') {
+      const servicesContainer = document.getElementById('servicesCardsContainer');
+      if (servicesContainer) {
+        servicesContainer.innerHTML = renderGovernmentServicesCards(this.store);
+        const countBadge = document.getElementById('servicesCountBadge');
+        if (countBadge) {
+          countBadge.textContent = `${this.store.services.length} of ${this.store.services.length} Services`;
+        }
+        return;
+      }
+    }
+
     const mainContent = document.getElementById('mainContent');
     if (mainContent) {
       mainContent.innerHTML = this.renderActiveSection();
-    } else {
-      this.render();
     }
   }
 
