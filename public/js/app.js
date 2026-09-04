@@ -168,6 +168,18 @@ class App {
       globalInput.value = query;
     }
 
+    // Defensive focus retention for global search input across all browser engines
+    if (isGlobalSearch && globalInput) {
+      if (document.activeElement !== globalInput) {
+        globalInput.focus();
+      }
+      if (cursorStart !== null && cursorEnd !== null && 'setSelectionRange' in globalInput) {
+        try {
+          globalInput.setSelectionRange(cursorStart, cursorEnd);
+        } catch (_) {}
+      }
+    }
+
     // If typing inside an in-page search input (inside #mainContent), restore its focus
     if (activeEl && !isGlobalSearch) {
       const newInPageSearch = document.querySelector('#mainContent input[placeholder*="Search" i], #mainContent .search-input');
@@ -1103,6 +1115,7 @@ class App {
                   placeholder="Search services, schemes, records... (Press '/' to focus)" 
                   value="${this.store.searchQuery}"
                   oninput="window.app.setSearch(this.value)"
+                  autocomplete="off"
                 />
               </div>
             </div>
