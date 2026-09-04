@@ -58,6 +58,8 @@ class App {
 
     this.store.activeTab = tabId;
     this.store.searchQuery = ''; // Reset search on tab switch
+    const searchInput = document.getElementById('globalSearchInput');
+    if (searchInput) searchInput.value = '';
     this.render();
     this.closeSidebarOnMobile();
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -66,19 +68,34 @@ class App {
   // Filter category
   setCategory(catId) {
     this.store.selectedCategory = catId;
-    this.render();
+    const mainContent = document.getElementById('mainContent');
+    if (mainContent) {
+      mainContent.innerHTML = this.renderActiveSection();
+    } else {
+      this.render();
+    }
   }
 
   // Filter department
   setDepartmentFilter(deptId) {
     this.store.selectedDepartment = deptId;
-    this.render();
+    const mainContent = document.getElementById('mainContent');
+    if (mainContent) {
+      mainContent.innerHTML = this.renderActiveSection();
+    } else {
+      this.render();
+    }
   }
 
   // Filter availability
   setAvailabilityFilter(avail) {
     this.store.selectedAvailability = avail;
-    this.render();
+    const mainContent = document.getElementById('mainContent');
+    if (mainContent) {
+      mainContent.innerHTML = this.renderActiveSection();
+    } else {
+      this.render();
+    }
   }
 
   // Reset all catalog filters
@@ -87,7 +104,14 @@ class App {
     this.store.selectedCategory = 'all';
     this.store.selectedDepartment = 'all';
     this.store.selectedAvailability = 'all';
-    this.render();
+    const searchInput = document.getElementById('globalSearchInput');
+    if (searchInput) searchInput.value = '';
+    const mainContent = document.getElementById('mainContent');
+    if (mainContent) {
+      mainContent.innerHTML = this.renderActiveSection();
+    } else {
+      this.render();
+    }
   }
 
   // View Service Details
@@ -99,16 +123,186 @@ class App {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  // Global search
+  // Global search: updates query and re-renders only page content, keeping search input mounted and focused
   setSearch(query) {
     this.store.searchQuery = query;
-    this.render();
+
+    const activeEl = document.activeElement;
+    const isGlobalSearch = activeEl && activeEl.id === 'globalSearchInput';
+    const cursorStart = activeEl && 'selectionStart' in activeEl ? activeEl.selectionStart : null;
+    const cursorEnd = activeEl && 'selectionEnd' in activeEl ? activeEl.selectionEnd : null;
+
+    // If searching from a tab that doesn't display search results, switch to services
+    const searchableTabs = ['services', 'schemes', 'scholarships', 'employment', 'news', 'tracking'];
+    let tabSwitched = false;
+    if (query && !searchableTabs.includes(this.store.activeTab)) {
+      this.store.activeTab = 'services';
+      tabSwitched = true;
+    }
+
+    if (tabSwitched) {
+      const navItems = document.querySelectorAll('.sidebar-nav .nav-item');
+      navItems.forEach(item => {
+        const onclick = item.getAttribute('onclick') || '';
+        if (onclick.includes("'services'")) {
+          item.classList.add('active');
+        } else {
+          item.classList.remove('active');
+        }
+      });
+    }
+
+    // Targeted DOM update: Only re-render the page container (#mainContent).
+    // The top-header and #globalSearchInput remain permanently mounted in the DOM,
+    // retaining native browser focus and caret position without interruption!
+    const mainContent = document.getElementById('mainContent');
+    if (mainContent) {
+      mainContent.innerHTML = this.renderActiveSection();
+    } else {
+      this.render();
+    }
+
+    // Synchronize global search input value if called programmatically
+    const globalInput = document.getElementById('globalSearchInput');
+    if (globalInput && globalInput !== activeEl && globalInput.value !== query) {
+      globalInput.value = query;
+    }
+
+    // If typing inside an in-page search input (inside #mainContent), restore its focus
+    if (activeEl && !isGlobalSearch) {
+      const newInPageSearch = document.querySelector('#mainContent input[placeholder*="Search" i], #mainContent .search-input');
+      if (newInPageSearch) {
+        newInPageSearch.focus();
+        if (cursorStart !== null && cursorEnd !== null && 'setSelectionRange' in newInPageSearch) {
+          try { newInPageSearch.setSelectionRange(cursorStart, cursorEnd); } catch (_) {}
+        }
+      }
+    }
   }
 
   resetSearch() {
     this.store.searchQuery = '';
     this.store.selectedCategory = 'all';
-    this.render();
+    const searchInput = document.getElementById('globalSearchInput');
+    if (searchInput) searchInput.value = '';
+    const mainContent = document.getElementById('mainContent');
+    if (mainContent) {
+      mainContent.innerHTML = this.renderActiveSection();
+    } else {
+      this.render();
+    }
+  }
+
+  // Specialized search handlers for tracking, vault, and officer queues
+  setTrackingSearch(query) {
+    this.store.trackingSearchQuery = query;
+    const activeEl = document.activeElement;
+    const cursorStart = activeEl && 'selectionStart' in activeEl ? activeEl.selectionStart : null;
+    const cursorEnd = activeEl && 'selectionEnd' in activeEl ? activeEl.selectionEnd : null;
+
+    const mainContent = document.getElementById('mainContent');
+    if (mainContent) {
+      mainContent.innerHTML = this.renderActiveSection();
+    } else {
+      this.render();
+    }
+
+    const newInPageSearch = document.getElementById('trackingSearchInput') || document.querySelector('#mainContent input[placeholder*="Search by ID" i]');
+    if (newInPageSearch) {
+      newInPageSearch.focus();
+      if (cursorStart !== null && cursorEnd !== null && 'setSelectionRange' in newInPageSearch) {
+        try { newInPageSearch.setSelectionRange(cursorStart, cursorEnd); } catch (_) {}
+      }
+    }
+  }
+
+  resetTrackingFilters() {
+    this.store.trackingSearchQuery = '';
+    this.store.trackingStatusFilter = 'ALL';
+    const mainContent = document.getElementById('mainContent');
+    if (mainContent) {
+      mainContent.innerHTML = this.renderActiveSection();
+    } else {
+      this.render();
+    }
+  }
+
+  setVaultSearch(query) {
+    this.store.vaultSearchQuery = query;
+    const activeEl = document.activeElement;
+    const cursorStart = activeEl && 'selectionStart' in activeEl ? activeEl.selectionStart : null;
+    const cursorEnd = activeEl && 'selectionEnd' in activeEl ? activeEl.selectionEnd : null;
+
+    const mainContent = document.getElementById('mainContent');
+    if (mainContent) {
+      mainContent.innerHTML = this.renderActiveSection();
+    } else {
+      this.render();
+    }
+
+    const newInPageSearch = document.getElementById('vault-search-input') || document.querySelector('#mainContent input[placeholder*="Search document" i]');
+    if (newInPageSearch) {
+      newInPageSearch.focus();
+      if (cursorStart !== null && cursorEnd !== null && 'setSelectionRange' in newInPageSearch) {
+        try { newInPageSearch.setSelectionRange(cursorStart, cursorEnd); } catch (_) {}
+      }
+    }
+  }
+
+  filterOfficerQueue(query) {
+    this.store.officerQueueSearch = query;
+    const activeEl = document.getElementById('officer-queue-search');
+    const cursorStart = activeEl && 'selectionStart' in activeEl ? activeEl.selectionStart : null;
+    const cursorEnd = activeEl && 'selectionEnd' in activeEl ? activeEl.selectionEnd : null;
+
+    const mainContent = document.getElementById('mainContent');
+    if (mainContent) {
+      mainContent.innerHTML = this.renderActiveSection();
+    } else {
+      this.render();
+    }
+
+    const restored = document.getElementById('officer-queue-search');
+    if (restored) {
+      restored.focus();
+      restored.value = query;
+      if (cursorStart !== null && cursorEnd !== null && 'setSelectionRange' in restored) {
+        try { restored.setSelectionRange(cursorStart, cursorEnd); } catch (_) {}
+      }
+    }
+  }
+
+  filterOfficerQueueStatus(status) {
+    this.store.officerQueueStatusFilter = status;
+    const mainContent = document.getElementById('mainContent');
+    if (mainContent) {
+      mainContent.innerHTML = this.renderActiveSection();
+    } else {
+      this.render();
+    }
+  }
+
+  filterGrievances(query) {
+    this.store.grievanceSearchQuery = query;
+    const activeEl = document.getElementById('grievanceSearchInput');
+    const cursorStart = activeEl && 'selectionStart' in activeEl ? activeEl.selectionStart : null;
+    const cursorEnd = activeEl && 'selectionEnd' in activeEl ? activeEl.selectionEnd : null;
+
+    const mainContent = document.getElementById('mainContent');
+    if (mainContent) {
+      mainContent.innerHTML = this.renderActiveSection();
+    } else {
+      this.render();
+    }
+
+    const restored = document.getElementById('grievanceSearchInput');
+    if (restored) {
+      restored.focus();
+      restored.value = query;
+      if (cursorStart !== null && cursorEnd !== null && 'setSelectionRange' in restored) {
+        try { restored.setSelectionRange(cursorStart, cursorEnd); } catch (_) {}
+      }
+    }
   }
 
   // Mobile sidebar controls
@@ -743,6 +937,12 @@ class App {
     const appEl = document.getElementById('app');
     if (!appEl) return;
 
+    // Preserve active element focus and selection if an input is focused during render
+    const activeEl = document.activeElement;
+    const activeId = activeEl ? activeEl.id : null;
+    const cursorStart = activeEl && 'selectionStart' in activeEl ? activeEl.selectionStart : null;
+    const cursorEnd = activeEl && 'selectionEnd' in activeEl ? activeEl.selectionEnd : null;
+
     const unreadCount = this.store.notifications.filter(n => n.unread).length;
     const tab = this.store.activeTab;
     const user = this.store.currentUser;
@@ -946,6 +1146,19 @@ class App {
         ${this.store.authModalOpen ? renderAuthModal(this.store) : ''}
       </div>
     `;
+
+    // Restore focus and cursor position if an input was focused before render
+    if (activeId) {
+      const restored = document.getElementById(activeId);
+      if (restored) {
+        restored.focus();
+        if (cursorStart !== null && cursorEnd !== null && 'setSelectionRange' in restored) {
+          try {
+            restored.setSelectionRange(cursorStart, cursorEnd);
+          } catch (_) {}
+        }
+      }
+    }
   }
 
   renderActiveSection() {
