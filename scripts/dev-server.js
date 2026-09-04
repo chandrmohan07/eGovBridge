@@ -10,10 +10,27 @@ import { fileURLToPath } from 'node:url';
 import { handleApiRequest } from '../server/api-router.js';
 import { apiGateway } from '../server/gateway.js';
 import { applySecurityHeaders } from '../server/security/index.js';
+import { db } from '../server/db.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const publicDir = path.resolve(__dirname, '..', 'public');
+
+// Load environment variables from .env if present
+const envPath = path.resolve(__dirname, '..', '.env');
+if (fs.existsSync(envPath)) {
+  const lines = fs.readFileSync(envPath, 'utf8').split('\n');
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
+      const [key, ...vals] = trimmed.split('=');
+      const val = vals.join('=').trim().replace(/^['"]|['"]$/g, '');
+      if (!process.env[key.trim()]) {
+        process.env[key.trim()] = val;
+      }
+    }
+  }
+}
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 
@@ -74,8 +91,19 @@ export function createServer() {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const server = createServer();
-  server.listen(PORT, () => {
+  server.listen(PORT, async () => {
     console.log(`GovPlatform Server running at http://localhost:${PORT}`);
     console.log(`Auth APIs available at http://localhost:${PORT}/api/v1/auth/*`);
+    if (db.isPostgresConfigured()) {
+      const initResult = await db.initPostgres();
+      if (initResult.connected) {
+        console.log(`[Database] PostgreSQL connected successfully (Tables synced and ready).`);
+      } else {
+        console.warn(`[Database] PostgreSQL connection failed: ${initResult.error || initResult.message}`);
+        console.warn(`[Database] Operating in In-Memory fallback mode.`);
+      }
+    } else {
+      console.log(`[Database] Running in In-Memory Mode. Set DATABASE_URL in .env to connect PostgreSQL.`);
+    }
   });
 }

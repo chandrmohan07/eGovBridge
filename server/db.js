@@ -5,6 +5,8 @@
 
 import crypto from 'node:crypto';
 import { planWorkflow } from './orchestrator.js';
+import { postgres } from './database/postgres.js';
+import { postgresRepository } from './database/postgres-repository.js';
 
 // Password Hashing Utility using Node native crypto (PBKDF2 / Scrypt)
 export function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
@@ -836,6 +838,61 @@ export const FEEDBACK = [
 
 // Helper database functions
 export const db = {
+  pg: postgres,
+  pgRepository: postgresRepository,
+
+  isPostgresConfigured() {
+    return postgres.isConfigured();
+  },
+
+  isPostgresConnected() {
+    return postgres.isConnected;
+  },
+
+  async initPostgres() {
+    if (!postgres.isConfigured()) {
+      return { configured: false, connected: false, message: 'DATABASE_URL not configured. Running in-memory mode.' };
+    }
+    const health = await postgres.checkHealth();
+    if (!health.connected) {
+      return health;
+    }
+    try {
+      await postgres.initSchema();
+      await this.loadFromPostgres();
+      return { configured: true, connected: true, message: 'PostgreSQL schema verified and synchronized.' };
+    } catch (err) {
+      return { configured: true, connected: false, error: err.message };
+    }
+  },
+
+  async loadFromPostgres() {
+    if (!postgres.isConfigured()) return;
+    try {
+      const pgUsers = await postgres.query(`SELECT id, email, password_hash as "passwordHash", salt, name, role, department_id as "departmentId", department_code as "departmentCode", designation, phone, aadhaar_masked as "aadhaarMasked", kyc_status as "kycStatus", state, district, created_at as "createdAt" FROM users`);
+      for (const u of pgUsers.rows) {
+        const idx = users.findIndex(x => x.id === u.id || x.email.toLowerCase() === u.email.toLowerCase());
+        if (idx >= 0) {
+          users[idx] = { ...users[idx], ...u };
+        } else {
+          users.push(u);
+        }
+      }
+
+      const pgApps = await postgres.query(`SELECT id, applicant_id as "applicantId", applicant_name as "applicantName", service_id as "serviceId", service_name as "serviceName", department_id as "departmentId", department_code as "departmentCode", status, current_stage as "currentStage", amount, form_data as "formData", documents, timeline, remarks, submitted_date as "submittedDate" FROM applications`);
+      for (const a of pgApps.rows) {
+        const idx = departmentalApplications.findIndex(x => x.id === a.id);
+        if (idx >= 0) {
+          departmentalApplications[idx] = { ...departmentalApplications[idx], ...a };
+        } else {
+          departmentalApplications.push(a);
+        }
+      }
+    } catch (err) {
+      console.warn('[PostgreSQL Sync] Error syncing from PostgreSQL:', err.message);
+    }
+  },
+
   findUserByEmail(email) {
     return users.find(u => u.email.toLowerCase() === email.toLowerCase().trim());
   },
@@ -873,6 +930,16 @@ export const db = {
     };
 
     users.push(newUser);
+
+    if (postgres.isConfigured()) {
+      postgres.query(
+        `INSERT INTO users (id, email, password_hash, salt, name, role, phone, aadhaar_masked, state, district)
+         VALUES ($1, $2, $3, $4, $5, 'CITIZEN', $6, $7, $8, $9)
+         ON CONFLICT (email) DO NOTHING`,
+        [newUser.id, newUser.email, newUser.passwordHash, newUser.salt, newUser.name, newUser.phone, newUser.aadhaarMasked, newUser.state, newUser.district]
+      ).catch(err => console.warn('[PostgreSQL Write-Through] User sync warning:', err.message));
+    }
+
     return newUser;
   },
 
@@ -888,6 +955,16 @@ export const db = {
       expiresAt: Date.now() + 24 * 60 * 60 * 1000 // 24 hours
     };
     sessions.set(token, session);
+
+    if (postgres.isConfigured()) {
+      postgres.query(
+        `INSERT INTO sessions (token, user_id, expires_at)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (token) DO NOTHING`,
+        [token, user.id, new Date(session.expiresAt)]
+      ).catch(err => console.warn('[PostgreSQL Write-Through] Session sync warning:', err.message));
+    }
+
     return session;
   },
 
@@ -904,6 +981,10 @@ export const db = {
   },
 
   deleteSession(token) {
+    if (postgres.isConfigured()) {
+      postgres.query(`DELETE FROM sessions WHERE token = $1`, [token])
+        .catch(err => console.warn('[PostgreSQL Write-Through] Session delete warning:', err.message));
+    }
     return sessions.delete(token);
   },
 
@@ -953,6 +1034,24 @@ export const db = {
     }
 
     departmentalApplications.push(newApp);
+
+    if (postgres.isConfigured()) {
+      postgres.query(
+        `INSERT INTO applications (id, applicant_id, applicant_name, service_id, service_name, 
+                                   department_id, department_code, status, current_stage, 
+                                   amount, form_data, documents, timeline, submitted_date)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+         ON CONFLICT (id) DO NOTHING`,
+        [
+          newApp.id, newApp.applicantId, newApp.applicantName, newApp.serviceId, newApp.serviceName,
+          newApp.departmentId || null, newApp.departmentCode, newApp.status, newApp.currentStage,
+          newApp.amount || 'N/A', JSON.stringify(newApp.formData || {}), JSON.stringify(newApp.documents || []),
+          JSON.stringify([{ stage: 'Application Submission', status: 'COMPLETED', timestamp: now, actor: newApp.applicantName }]),
+          newApp.submittedDate
+        ]
+      ).catch(err => console.warn('[PostgreSQL Write-Through] Application sync warning:', err.message));
+    }
+
     return newApp;
   },
 
@@ -995,6 +1094,20 @@ export const db = {
       }
     }
     app.updatedAt = now;
+
+    if (postgres.isConfigured()) {
+      postgres.query(
+        `UPDATE applications 
+         SET form_data = $1, documents = $2, status = $3, current_stage = $4, 
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = $5`,
+        [
+          JSON.stringify(app.formData || {}), JSON.stringify(app.documents || []),
+          app.status, app.currentStage, app.id
+        ]
+      ).catch(err => console.warn('[PostgreSQL Write-Through] Application update warning:', err.message));
+    }
+
     return app;
   },
 
@@ -1919,6 +2032,17 @@ export const db = {
     };
 
     GRIEVANCES.unshift(g);
+
+    if (postgres.isConfigured()) {
+      postgres.query(
+        `INSERT INTO grievances (id, citizen_id, citizen_name, department_id, department_code, 
+                                 application_id, title, description, status, priority)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'SUBMITTED', $9)
+         ON CONFLICT (id) DO NOTHING`,
+        [g.id, g.citizenId, g.citizenName, g.departmentId || null, g.departmentCode, g.applicationId || null, g.subject || 'Grievance', g.description, g.priority || 'MEDIUM']
+      ).catch(err => console.warn('[PostgreSQL Write-Through] Grievance sync warning:', err.message));
+    }
+
     return g;
   },
 
@@ -1975,6 +2099,17 @@ export const db = {
     };
 
     FEEDBACK.unshift(f);
+
+    if (postgres.isConfigured()) {
+      postgres.query(
+        `INSERT INTO feedbacks (id, citizen_id, citizen_name, application_id, service_id, 
+                               department_code, rating, category, feedback_text, sentiment)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         ON CONFLICT (id) DO NOTHING`,
+        [f.id, f.citizenId, f.citizenName, f.applicationId || null, f.serviceId || null, null, f.rating, f.category || 'General', f.feedbackText || '', 'NEUTRAL']
+      ).catch(err => console.warn('[PostgreSQL Write-Through] Feedback sync warning:', err.message));
+    }
+
     return f;
   }
 };

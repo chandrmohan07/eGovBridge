@@ -13,13 +13,42 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - HOST=0.0.0.0
+      - DATABASE_URL=postgresql://egov_admin:egov_secure_pass_2026@postgres:5432/egov_bridge
+      - PG_SSL=false
       - GATEWAY_RATE_LIMIT_WINDOW_MS=60000
       - GATEWAY_RATE_LIMIT_MAX=120
       - GATEWAY_TIMEOUT_MS=10000
       - CORS_ALLOWED_ORIGIN=http://localhost:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "node", "-e", "import('node:http').then(h => h.get('http://127.0.0.1:3000/api/v1/health', r => process.exit(r.statusCode === 200 ? 0 : 1)))"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 5s
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: sih-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-egov_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-egov_secure_pass_2026}
+      POSTGRES_DB: ${POSTGRES_DB:-egov_bridge}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./server/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./server/database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-egov_admin} -d ${POSTGRES_DB:-egov_bridge}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+

@@ -6,6 +6,7 @@
 
 import crypto from 'node:crypto';
 import { applySecurityHeaders, recordAuditEvent, AUDIT_EVENTS } from './security/index.js';
+import { db } from './db.js';
 
 // Rate Limiting Configuration (Configurable via process.env or test helper)
 export const rateLimitConfig = {
@@ -174,10 +175,17 @@ export async function apiGateway(req, res, downstreamHandler) {
 
     // 6. Gateway Health & Status Routes
     if (method === 'GET' && pathname === '/api/v1/health') {
+      const isPgConfigured = db.isPostgresConfigured ? db.isPostgresConfigured() : false;
+      const isPgConnected = db.isPostgresConnected ? db.isPostgresConnected() : false;
       return sendGatewayJson(res, 200, {
         success: true,
         status: 'UP',
         service: 'Government Integration Platform API Gateway',
+        database: {
+          configured: isPgConfigured,
+          connected: isPgConnected,
+          engine: isPgConnected ? 'PostgreSQL 16' : (isPgConfigured ? 'PostgreSQL (Connecting/Retrying)' : 'In-Memory State Store')
+        },
         timestamp: new Date().toISOString(),
         uptime: process.uptime()
       }, requestId);
