@@ -149,4 +149,55 @@ describe('Search Input Multi-Character Typing & Focus Retention Verification', (
     assert.equal(globalSearchInput.value, 'scholar', 'All 7 characters must be present in input');
     assert.equal(mockApp.store.searchQuery, 'scholar', 'Search query in store must be "scholar"');
   });
+
+  it('verifies typing "f", "fa", and "farmer" preserves complete value and focus', async () => {
+    const { store } = await import('../public/js/store.js');
+    const globalSearchInput = global.document.getElementById('globalSearchInput');
+    const mainContent = global.document.getElementById('mainContent');
+
+    const mockApp = {
+      store,
+      renderActiveSection() {
+        const query = (this.store.searchQuery || '').toLowerCase();
+        const filtered = this.store.services.filter(s =>
+          s.title.toLowerCase().includes(query) || s.category.toLowerCase().includes(query)
+        );
+        return `<div class="results-count">${filtered.length} services found</div>`;
+      },
+      setSearch(query) {
+        this.store.searchQuery = query;
+        const main = global.document.getElementById('mainContent');
+        if (main) {
+          main.innerHTML = this.renderActiveSection();
+        }
+        const input = global.document.getElementById('globalSearchInput');
+        if (input && input !== global.document.activeElement && input.value !== query) {
+          input.value = query;
+        }
+      }
+    };
+
+    globalSearchInput.focus();
+
+    // Type 'f'
+    globalSearchInput.value = 'f';
+    mockApp.setSearch('f');
+    assert.equal(global.document.activeElement, globalSearchInput);
+    assert.equal(globalSearchInput.value, 'f');
+    assert.equal(mockApp.store.searchQuery, 'f');
+
+    // Type 'fa'
+    globalSearchInput.value = 'fa';
+    mockApp.setSearch('fa');
+    assert.equal(global.document.activeElement, globalSearchInput);
+    assert.equal(globalSearchInput.value, 'fa');
+    assert.equal(mockApp.store.searchQuery, 'fa');
+
+    // Type 'farmer'
+    globalSearchInput.value = 'farmer';
+    mockApp.setSearch('farmer');
+    assert.equal(global.document.activeElement, globalSearchInput);
+    assert.equal(globalSearchInput.value, 'farmer');
+    assert.equal(mockApp.store.searchQuery, 'farmer');
+  });
 });
